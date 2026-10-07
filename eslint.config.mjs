@@ -11,6 +11,10 @@ const eslintConfig = defineConfig([
     rules: {
       // Segurança: HTML cru é proibido no projeto (CLAUDE.md › Segurança).
       "react/no-danger": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { ignoreRestSiblings: true },
+      ],
     },
   },
   globalIgnores([

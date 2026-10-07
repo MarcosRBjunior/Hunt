@@ -37,6 +37,14 @@ A aplicação sobe em http://localhost:3000. Se faltar alguma variável de ambie
 
 Todas ficam em `.env.example` e são validadas com Zod em `src/server/env.ts`. O schema cresce por fase: hoje exige `PRODUCT_SOURCE` (`mock` ou `prisma`) e `LOG_LEVEL`. As do banco entram na Fase 4 e as do Clerk na Fase 6.
 
+## API
+
+| Método | Rota               | Resposta                                                                                                 |
+| ------ | ------------------ | -------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/products` | `{ "data": ProductDTO[] }` com os produtos lançados, por votos (e, no empate, os mais recentes primeiro) |
+
+No nível 1 os dados vêm de `src/mocks/products.json`.
+
 ## Estrutura
 
 ```
@@ -54,11 +62,11 @@ As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](
 
 ## Etapas
 
-| Nível   | Entrega                                                  | Status                          |
-| ------- | -------------------------------------------------------- | ------------------------------- |
-| 1       | Layout + listagem vinda de API mock                      | Em andamento (Fase 1, fundação) |
-| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | —                               |
-| 3       | Filtro por trending topics                               | —                               |
+| Nível   | Entrega                                                  | Status                                 |
+| ------- | -------------------------------------------------------- | -------------------------------------- |
+| 1       | Layout + listagem vinda de API mock                      | Em andamento (Fase 2, contrato + mock) |
+| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | —                                      |
+| 3       | Filtro por trending topics                               | —                                      |
 
 ## Fluxo de trabalho
 
