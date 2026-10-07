@@ -1,0 +1,85 @@
+[
+  {
+    "id": "3298e163-2386-4262-aef9-111f686559a3",
+    "title": "Milo AI",
+    "description": "Seu copiloto inteligente para organizar ideias e transformar planos em ação.",
+    "url": "https://example.com/milo-ai",
+    "logoUrl": null,
+    "upvotes": 298,
+    "visits": 1240,
+    "status": "LAUNCHED",
+    "topics": [
+      { "slug": "ia", "name": "Inteligência artificial" },
+      { "slug": "produtividade", "name": "Produtividade" }
+    ],
+    "review": {
+      "rating": 5,
+      "summary": "Produtividade elevada a outro nível."
+    },
+    "createdAt": "2026-09-22T13:00:00.000Z"
+  },
+  {
+    "id": "05ad3ecd-3696-46bb-84a3-c5eedd4eda67",
+    "title": "Layer",
+    "description": "A API visual que conecta suas ferramentas favoritas em poucos minutos.",
+    "url": "https://example.com/layer",
+    "logoUrl": null,
+    "upvotes": 202,
+    "visits": 860,
+    "status": "LAUNCHED",
+    "topics": [
+      { "slug": "tech", "name": "Tech" },
+      { "slug": "saas", "name": "SaaS" }
+    ],
+    "review": {
+      "rating": 5,
+      "summary": "A forma mais simples de integrar ferramentas."
+    },
+    "createdAt": "2026-09-24T15:30:00.000Z"
+  },
+  {
+    "id": "bf939d65-38b9-4c00-83d2-786007918933",
+    "title": "Sunnie",
+    "description": "Relatórios de marketing claros, bonitos e prontos para compartilhar.",
+    "url": "https://example.com/sunnie",
+    "logoUrl": null,
+    "upvotes": 102,
+    "visits": 430,
+    "status": "LAUNCHED",
+    "topics": [
+      { "slug": "marketing", "name": "Marketing" },
+      { "slug": "saas", "name": "SaaS" }
+    ],
+    "review": null,
+    "createdAt": "2026-09-27T10:15:00.000Z"
+  },
+  {
+    "id": "1714bfd0-b06f-4f22-b099-7bcf113a16d1",
+    "title": "Orbit",
+    "description": "Um espaço de trabalho calmo para equipes que pensam grande.",
+    "url": "https://example.com/orbit",
+    "logoUrl": null,
+    "upvotes": 29,
+    "visits": 95,
+    "status": "LAUNCHED",
+    "topics": [
+      { "slug": "saas", "name": "SaaS" },
+      { "slug": "produtividade", "name": "Produtividade" }
+    ],
+    "review": null,
+    "createdAt": "2026-10-01T18:45:00.000Z"
+  },
+  {
+    "id": "7965610e-7c1c-4bec-8bd0-411e29548c97",
+    "title": "zwelie",
+    "description": "Integre projetos da sua plataforma cloud favorita em um único lugar.",
+    "url": "https://example.com/zwelie",
+    "logoUrl": null,
+    "upvotes": 0,
+    "visits": 0,
+    "status": "UPCOMING",
+    "topics": [{ "slug": "tech", "name": "Tech" }],
+    "review": null,
+    "createdAt": "2026-10-05T09:00:00.000Z"
+  }
+]
