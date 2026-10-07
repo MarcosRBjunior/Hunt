@@ -66,11 +66,11 @@ As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](
 
 ## Etapas
 
-| Nível   | Entrega                                                  | Status                       |
-| ------- | -------------------------------------------------------- | ---------------------------- |
-| 1       | Layout + listagem vinda de API mock                      | Em andamento (Fase 3, front) |
-| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | —                            |
-| 3       | Filtro por trending topics                               | —                            |
+| Nível   | Entrega                                                  | Status               |
+| ------- | -------------------------------------------------------- | -------------------- |
+| 1       | Layout + listagem vinda de API mock                      | Concluído (`v1.0.0`) |
+| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | —                    |
+| 3       | Filtro por trending topics                               | —                    |
 
 ## Fluxo de trabalho
 
