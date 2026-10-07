@@ -28,6 +28,9 @@
   --color-primary-subtle-strong: #efedff;
   --color-primary-border: #ccc7fa;
   --color-primary-border-soft: #e3e0fb;
+  /* Gradiente do card "em breve" */
+  --color-primary-wash: #f3f1ff;
+  --color-primary-wash-end: #fafaff;
 
   /* Texto: 4 níveis, todos AA (≥ 4.5:1) sobre as superfícies abaixo */
   --color-ink: #17202e;

@@ -20,6 +20,16 @@ export type ProductDTO = {
   createdAt: string;
 };
 
+export type ReviewDTO = {
+  /** 1 a 5 */
+  rating: number;
+  summary: string | null;
+};
+
+export type ReviewedProductDTO = ProductDTO & {
+  review: ReviewDTO;
+};
+
 export type ApiSuccess<T> = {
   data: T;
 };

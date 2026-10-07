@@ -13,7 +13,7 @@ export default function CategoriasPage() {
     <PageShell active="categorias">
       <section className="py-9 md:px-2">
         <Eyebrow>Trending topics</Eyebrow>
-        <h1 className="text-display font-bold text-ink">Categorias</h1>
+        <h1 className="text-display font-normal text-ink">Categorias</h1>
         <p className="mt-3 max-w-xl text-nav text-ink-subtle">
           Os assuntos que organizam os produtos da vitrine. Um produto pode
           estar em mais de uma categoria.

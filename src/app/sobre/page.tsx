@@ -12,7 +12,7 @@ export default function SobrePage() {
     <PageShell active="sobre">
       <article className="max-w-2xl py-9 md:px-2">
         <Eyebrow>Sobre o projeto</Eyebrow>
-        <h1 className="text-display font-bold text-ink">
+        <h1 className="text-display font-normal text-ink">
           Descubra o próximo grande app
         </h1>
 

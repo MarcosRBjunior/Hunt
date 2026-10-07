@@ -3,7 +3,12 @@ import { z } from "zod";
 import { TOPIC_SLUGS } from "@/lib/topics";
 import rawProducts from "@/mocks/products.json";
 
-import type { Product, ProductRepository } from "./productRepository";
+import type {
+  EditorialReview,
+  Product,
+  ProductRepository,
+  ReviewedProduct,
+} from "./productRepository";
 
 const httpUrl = z.url({ protocol: /^https?$/, hostname: z.regexes.domain });
 
@@ -23,7 +28,6 @@ const mockProductSchema = z.object({
       name: z.string().min(1).max(60),
     }),
   ),
-  // Lido pela lateral "Produtos revisados por nós" a partir da Fase 3.
   review: z
     .object({
       rating: z.int().min(1).max(5),
@@ -33,30 +37,62 @@ const mockProductSchema = z.object({
   createdAt: z.iso.datetime(),
 });
 
-export function parseMockProducts(raw: unknown): Product[] {
+/** Produto do mock com a revisão editorial junto (no banco ela fica em outra tabela). */
+export type MockProductRecord = Product & { review: EditorialReview | null };
+
+export function parseMockProducts(raw: unknown): MockProductRecord[] {
   return z
     .array(mockProductSchema)
     .parse(raw)
-    .map(({ review, createdAt, ...product }) => ({
+    .map(({ createdAt, ...product }) => ({
       ...product,
       createdAt: new Date(createdAt),
     }));
 }
 
-function byRanking(a: Product, b: Product): number {
-  return b.upvotes - a.upvotes || b.createdAt.getTime() - a.createdAt.getTime();
+function newestFirst(a: Product, b: Product): number {
+  return b.createdAt.getTime() - a.createdAt.getTime();
+}
+
+function toProduct({ review, ...product }: MockProductRecord): Product {
+  return product;
+}
+
+function hasReview(
+  record: MockProductRecord,
+): record is MockProductRecord & ReviewedProduct {
+  return record.review !== null;
 }
 
 export class MockProductRepository implements ProductRepository {
-  private readonly products: readonly Product[];
+  private readonly records: readonly MockProductRecord[];
 
-  constructor(products: readonly Product[] = parseMockProducts(rawProducts)) {
-    this.products = products;
+  constructor(
+    records: readonly MockProductRecord[] = parseMockProducts(rawProducts),
+  ) {
+    this.records = records;
   }
 
   async listLaunched(): Promise<Product[]> {
-    return this.products
-      .filter((product) => product.status === "LAUNCHED")
-      .toSorted(byRanking);
+    return this.records
+      .filter((record) => record.status === "LAUNCHED")
+      .map(toProduct)
+      .toSorted((a, b) => b.upvotes - a.upvotes || newestFirst(a, b));
+  }
+
+  async listReviewed(limit: number): Promise<ReviewedProduct[]> {
+    return this.records
+      .filter(hasReview)
+      .toSorted(
+        (a, b) => b.review.rating - a.review.rating || newestFirst(a, b),
+      )
+      .slice(0, limit);
+  }
+
+  async listUpcoming(): Promise<Product[]> {
+    return this.records
+      .filter((record) => record.status === "UPCOMING")
+      .map(toProduct)
+      .toSorted(newestFirst);
   }
 }

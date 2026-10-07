@@ -22,6 +22,21 @@ describe("MockProductRepository com src/mocks/products.json", () => {
       { title: "Orbit", upvotes: 29 },
     ]);
   });
+
+  it("traz Layer e Milo AI como revisados (5/5) e zwelie em breve", async () => {
+    const repository = new MockProductRepository();
+
+    const reviewed = await repository.listReviewed(3);
+    const upcoming = await repository.listUpcoming();
+
+    expect(reviewed.map(({ title, review }) => [title, review.rating])).toEqual(
+      [
+        ["Layer", 5],
+        ["Milo AI", 5],
+      ],
+    );
+    expect(upcoming.map((product) => product.title)).toEqual(["zwelie"]);
+  });
 });
 
 describe("parseMockProducts", () => {

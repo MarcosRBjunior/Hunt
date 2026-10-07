@@ -1,14 +1,18 @@
-import type { ProductDTO } from "@/types/api";
+import type { ProductDTO, ReviewedProductDTO } from "@/types/api";
 
 import { productRepository } from "../repositories";
 import type {
   Product,
   ProductRepository,
+  ReviewedProduct,
 } from "../repositories/productRepository";
 
 type Dependencies = {
   productRepository: ProductRepository;
 };
+
+/** Quantos revisados a lateral mostra (CLAUDE.md › Regras de negócio, 9). */
+const REVIEWED_LIMIT = 3;
 
 function toProductDTO(product: Product): ProductDTO {
   return {
@@ -27,10 +31,27 @@ function toProductDTO(product: Product): ProductDTO {
   };
 }
 
+function toReviewedProductDTO(product: ReviewedProduct): ReviewedProductDTO {
+  return {
+    ...toProductDTO(product),
+    review: { rating: product.review.rating, summary: product.review.summary },
+  };
+}
+
 export function createProductService({ productRepository }: Dependencies) {
   return {
     async listLaunched(): Promise<ProductDTO[]> {
       const products = await productRepository.listLaunched();
+      return products.map(toProductDTO);
+    },
+
+    async listReviewed(): Promise<ReviewedProductDTO[]> {
+      const products = await productRepository.listReviewed(REVIEWED_LIMIT);
+      return products.map(toReviewedProductDTO);
+    },
+
+    async listUpcoming(): Promise<ProductDTO[]> {
+      const products = await productRepository.listUpcoming();
       return products.map(toProductDTO);
     },
   };
