@@ -9,14 +9,18 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Hunt",
-  description: "Vitrine pública de produtos de startups, ordenada por upvotes.",
+  title: {
+    default: "nova · Descubra o próximo grande app",
+    template: "%s · nova",
+  },
+  description:
+    "Vitrine pública de produtos de startups, ordenada pelos votos da comunidade.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${manrope.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+    <html lang="pt-BR" className={`${manrope.variable} antialiased`}>
+      <body className="font-sans">{children}</body>
     </html>
   );
 }

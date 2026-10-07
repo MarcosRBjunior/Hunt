@@ -45,6 +45,10 @@ Todas ficam em `.env.example` e são validadas com Zod em `src/server/env.ts`. O
 
 No nível 1 os dados vêm de `src/mocks/products.json`.
 
+## Design
+
+O design system "nova" foi extraído do Figma Make e está em [`docs/design/`](docs/design/DESIGN-SYSTEM.md). Os tokens viraram o `@theme` do Tailwind em `src/app/globals.css`, com alguns ajustes: fonte mínima de 11px, textos com contraste AA, cinzas consolidados, anel de foco e navegação visível no celular.
+
 ## Estrutura
 
 ```
@@ -62,11 +66,11 @@ As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](
 
 ## Etapas
 
-| Nível   | Entrega                                                  | Status                                 |
-| ------- | -------------------------------------------------------- | -------------------------------------- |
-| 1       | Layout + listagem vinda de API mock                      | Em andamento (Fase 2, contrato + mock) |
-| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | —                                      |
-| 3       | Filtro por trending topics                               | —                                      |
+| Nível   | Entrega                                                  | Status                       |
+| ------- | -------------------------------------------------------- | ---------------------------- |
+| 1       | Layout + listagem vinda de API mock                      | Em andamento (Fase 3, front) |
+| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | —                            |
+| 3       | Filtro por trending topics                               | —                            |
 
 ## Fluxo de trabalho
 
