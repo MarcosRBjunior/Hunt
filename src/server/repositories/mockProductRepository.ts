@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { TOPIC_SLUGS } from "@/lib/topics";
 import rawProducts from "@/mocks/products.json";
 
 import type { Product, ProductRepository } from "./productRepository";
@@ -18,7 +19,7 @@ const mockProductSchema = z.object({
   status: z.enum(["LAUNCHED", "UPCOMING"]),
   topics: z.array(
     z.object({
-      slug: z.enum(["ia", "produtividade", "marketing", "saas", "tech"]),
+      slug: z.enum(TOPIC_SLUGS),
       name: z.string().min(1).max(60),
     }),
   ),
