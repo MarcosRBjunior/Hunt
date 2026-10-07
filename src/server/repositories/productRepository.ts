@@ -18,10 +18,23 @@ export type Product = {
   createdAt: Date;
 };
 
+export type EditorialReview = {
+  rating: number;
+  summary: string | null;
+};
+
+export type ReviewedProduct = Product & { review: EditorialReview };
+
 export interface ProductRepository {
   /**
    * Produtos `LAUNCHED`, ordenados por `upvotes DESC, createdAt DESC`,
    * sem paginação.
    */
   listLaunched(): Promise<Product[]>;
+
+  /** Produtos com revisão, por `rating DESC, createdAt DESC`, até `limit`. */
+  listReviewed(limit: number): Promise<ReviewedProduct[]>;
+
+  /** Produtos `UPCOMING`, por `createdAt DESC`. */
+  listUpcoming(): Promise<Product[]>;
 }
