@@ -47,7 +47,7 @@ No nível 1 os dados vêm de `src/mocks/products.json`.
 
 ## Design
 
-O design system "nova" foi extraído do Figma Make e está em [`docs/design/`](docs/design/DESIGN-SYSTEM.md). Os tokens viraram o `@theme` do Tailwind em `src/app/globals.css`, com alguns ajustes: fonte mínima de 11px, textos com contraste AA, cinzas consolidados, anel de foco e navegação visível no celular.
+O design system "nova" foi extraído do Figma Make e está em [`docs/design/`](docs/design/DESIGN-SYSTEM.md). Os tokens viraram o `@theme` do Tailwind em `src/app/globals.css`, que é a fonte de verdade no código, com alguns ajustes: fonte mínima de 11px, textos com contraste AA, cinzas consolidados, anel de foco e navegação visível no celular. A lista completa está em [Ajustes aplicados](docs/design/DESIGN-SYSTEM.md#10-ajustes-aplicados-v100).
 
 ## Estrutura
 
@@ -66,11 +66,11 @@ As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](
 
 ## Etapas
 
-| Nível   | Entrega                                                  | Status                       |
-| ------- | -------------------------------------------------------- | ---------------------------- |
-| 1       | Layout + listagem vinda de API mock                      | Em andamento (Fase 3, front) |
-| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | —                            |
-| 3       | Filtro por trending topics                               | —                            |
+| Nível   | Entrega                                                  | Status               |
+| ------- | -------------------------------------------------------- | -------------------- |
+| 1       | Layout + listagem vinda de API mock                      | Concluído (`v1.0.0`) |
+| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | —                    |
+| 3       | Filtro por trending topics                               | —                    |
 
 ## Fluxo de trabalho
 

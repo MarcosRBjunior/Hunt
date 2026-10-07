@@ -1,99 +1,97 @@
-/* Tailwind v4 — importe depois de tokens.css */
-@theme inline {
-  --font-sans: var(--font-family-base);
-  --text-display: var(--font-size-display);
-  --text-logo: var(--font-size-logo);
-  --text-title: var(--font-size-title);
-  --text-card-title: var(--font-size-card-title);
-  --text-nav: var(--font-size-nav);
-  --text-button: var(--font-size-button);
-  --text-body: var(--font-size-body);
-  --text-small: var(--font-size-small);
-  --text-caption: var(--font-size-caption);
-  --text-overline: var(--font-size-overline);
-  --text-tag: var(--font-size-tag);
-  --text-micro: var(--font-size-micro);
-  --color-primary: var(--color-primary);
-  --color-primary-hover: var(--color-primary-hover);
-  --color-primary-text-hover: var(--color-primary-text-hover);
-  --color-primary-subtle: var(--color-primary-subtle);
-  --color-primary-subtle-strong: var(--color-primary-subtle-strong);
-  --color-primary-border: var(--color-primary-border);
-  --color-primary-border-soft: var(--color-primary-border-soft);
-  --color-primary-muted-text: var(--color-primary-muted-text);
-  --color-text-primary: var(--color-text-primary);
-  --color-text-heading: var(--color-text-heading);
-  --color-text-strong: var(--color-text-strong);
-  --color-text-emphasis: var(--color-text-emphasis);
-  --color-text-secondary: var(--color-text-secondary);
-  --color-text-icon: var(--color-text-icon);
-  --color-text-chip: var(--color-text-chip);
-  --color-text-tag: var(--color-text-tag);
-  --color-text-muted: var(--color-text-muted);
-  --color-text-muted-alt: var(--color-text-muted-alt);
-  --color-text-description: var(--color-text-description);
-  --color-text-caps: var(--color-text-caps);
-  --color-text-subtle: var(--color-text-subtle);
-  --color-text-overline: var(--color-text-overline);
-  --color-text-faint: var(--color-text-faint);
-  --color-text-placeholder: var(--color-text-placeholder);
-  --color-text-footer: var(--color-text-footer);
-  --color-text-rank: var(--color-text-rank);
-  --color-text-inverse: var(--color-text-inverse);
-  --color-bg-page: var(--color-bg-page);
-  --color-bg-shell: var(--color-bg-shell);
-  --color-surface: var(--color-surface);
-  --color-surface-subtle: var(--color-surface-subtle);
-  --color-surface-hover: var(--color-surface-hover);
-  --color-surface-tag: var(--color-surface-tag);
-  --color-border-shell: var(--color-border-shell);
-  --color-border-default: var(--color-border-default);
-  --color-border-strong: var(--color-border-strong);
-  --color-border-header: var(--color-border-header);
-  --color-border-card: var(--color-border-card);
-  --color-border-panel: var(--color-border-panel);
-  --color-border-chip: var(--color-border-chip);
-  --color-border-upvote: var(--color-border-upvote);
-  --color-border-divider: var(--color-border-divider);
-  --color-border-soft: var(--color-border-soft);
-  --color-border-hairline: var(--color-border-hairline);
-  --color-border-footer: var(--color-border-footer);
-  --color-live: var(--color-live);
-  --color-live-ring: var(--color-live-ring);
-  --color-star: var(--color-star);
-  --color-accent-green-fg: var(--accent-green-fg);
-  --color-accent-green-bg: var(--accent-green-bg);
-  --color-accent-green-inner: var(--accent-green-inner);
-  --color-accent-green-soft: var(--accent-green-soft);
-  --color-accent-green-deep: var(--accent-green-deep);
-  --color-accent-green-tint: var(--accent-green-tint);
-  --color-accent-blue-fg: var(--accent-blue-fg);
-  --color-accent-blue-bg: var(--accent-blue-bg);
-  --color-accent-blue-inner: var(--accent-blue-inner);
-  --color-accent-blue-soft: var(--accent-blue-soft);
-  --color-accent-yellow-fg: var(--accent-yellow-fg);
-  --color-accent-yellow-bg: var(--accent-yellow-bg);
-  --color-accent-yellow-inner: var(--accent-yellow-inner);
-  --color-accent-purple-fg: var(--accent-purple-fg);
-  --color-accent-purple-bg: var(--accent-purple-bg);
-  --color-accent-purple-inner: var(--accent-purple-inner);
-  --radius-xs: var(--radius-xs);
-  --radius-indicator: var(--radius-indicator);
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-upvote: var(--radius-upvote);
-  --radius-icon: var(--radius-icon);
-  --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
-  --radius-shell: var(--radius-shell);
-  --radius-pill: var(--radius-pill);
-  --radius-full: var(--radius-full);
-  --shadow-shell: var(--shadow-shell);
-  --shadow-card-hover: var(--shadow-card-hover);
-  --shadow-panel-hover: var(--shadow-panel-hover);
-  --shadow-primary: var(--shadow-primary);
-  --shadow-primary-hover: var(--shadow-primary-hover);
-  --shadow-primary-sm: var(--shadow-primary-sm);
-  --shadow-logo: var(--shadow-logo);
-  --shadow-live-ring: var(--shadow-live-ring);
+/*
+ * Bloco @theme do Tailwind v4 usado pelo projeto (cópia de src/app/globals.css).
+ * Para usar em outro projeto: @import "tailwindcss"; e cole este bloco.
+ * A variável --font-manrope vem do next/font; fora do Next, troque por 'Manrope'.
+ */
+@theme {
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  /* Tipografia */
+  --text-caption: 11px;
+  --text-body: 12px;
+  --text-button: 13px;
+  --text-nav: 14px;
+  --text-card-title: 15px;
+  --text-title: 20px;
+  --text-title--line-height: 1.25;
+  --text-title--letter-spacing: -0.7px;
+  --text-logo: 22px;
+  --text-display: clamp(27px, 2.2vw, 36px);
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -1.6px;
+
+  /* Marca */
+  --color-primary: #6258e8;
+  --color-primary-hover: #5249d5;
+  --color-primary-subtle: #f2f0ff;
+  --color-primary-subtle-strong: #efedff;
+  --color-primary-border: #ccc7fa;
+  --color-primary-border-soft: #e3e0fb;
+  /* Gradiente do card "em breve" */
+  --color-primary-wash: #f3f1ff;
+  --color-primary-wash-end: #fafaff;
+
+  /* Texto: 4 níveis, todos AA (≥ 4.5:1) sobre as superfícies abaixo */
+  --color-ink: #17202e;
+  --color-ink-soft: #3f4654;
+  --color-ink-muted: #555c6b;
+  --color-ink-subtle: #646a78;
+
+  /* Superfícies */
+  --color-page: #f2f4fa;
+  --color-shell: rgb(255 255 255 / 0.92);
+  --color-surface: #ffffff;
+  --color-surface-subtle: #fafafd;
+  --color-surface-hover: #f8f8fb;
+  --color-surface-tag: #f4f5f8;
+
+  /* Bordas */
+  --color-line-shell: rgb(31 42 68 / 0.08);
+  --color-line-soft: #ecedf2;
+  --color-line: #e3e5eb;
+  --color-line-strong: #c9ccd6;
+
+  /* Destaques */
+  --color-live: #f26b55;
+  --color-star: #f5ad32;
+
+  /* Acentos de produto */
+  --color-accent-green: #188d78;
+  --color-accent-green-bg: #e9faf5;
+  --color-accent-green-inner: #bdf0df;
+  --color-accent-green-soft: #dff8ef;
+  --color-accent-blue: #267bc7;
+  --color-accent-blue-bg: #eaf5ff;
+  --color-accent-blue-inner: #bfe2ff;
+  --color-accent-blue-soft: #dcefff;
+  --color-accent-yellow: #c98112;
+  --color-accent-yellow-bg: #fff8df;
+  --color-accent-yellow-inner: #ffe4a1;
+  --color-accent-yellow-soft: #fff0c4;
+  --color-accent-purple: #694fd2;
+  --color-accent-purple-bg: #f1edff;
+  --color-accent-purple-inner: #d8cbff;
+  --color-accent-purple-soft: #e8e1ff;
+
+  /* Raios */
+  --radius-xs: 6px;
+  --radius-indicator: 9px;
+  --radius-sm: 11px;
+  --radius-md: 12px;
+  --radius-upvote: 13px;
+  --radius-icon: 15px;
+  --radius-lg: 16px;
+  --radius-xl: 18px;
+  --radius-shell: 26px;
+  --radius-pill: 99px;
+
+  /* Elevação */
+  --shadow-shell: 0 28px 70px rgb(37 44 74 / 0.09);
+  --shadow-card-hover: 0 14px 36px rgb(33 41 67 / 0.08);
+  --shadow-panel-hover: 0 12px 28px rgb(33 41 67 / 0.07);
+  --shadow-primary: 0 8px 20px rgb(98 88 232 / 0.22);
+  --shadow-primary-hover: 0 10px 24px rgb(98 88 232 / 0.3);
+  --shadow-primary-sm: 0 7px 16px rgb(98 88 232 / 0.22);
+  --shadow-logo: 0 7px 16px rgb(98 88 232 / 0.25);
+  --shadow-live-ring: 0 0 0 5px rgb(242 107 85 / 0.12);
 }
