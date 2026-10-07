@@ -1,0 +1,36 @@
+# dependências
+node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# build
+build/
+dist/
+*.tsbuildinfo
+
+# testes
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# variáveis de ambiente (só o exemplo é versionado)
+.env*
+!.env.example
+
+# Vercel
+.vercel
+
+# logs
+npm-debug.log*
+*.log
+
+# SO / editores
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

@@ -1,0 +1,205 @@
+/* =========================================================
+   nova — Design Tokens
+   Extraído de Figma Make "Página inicial de plataforma"
+   (src/index.css). Valores 1:1 com o código original.
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* ---------- Tipografia ---------- */
+  --font-family-base: 'Manrope', sans-serif;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  --font-size-display: clamp(27px, 2.2vw, 36px); /* h1 */
+  --font-size-logo: 22px;
+  --font-size-title: 20px;      /* h2 sidebar */
+  --font-size-card-title: 15px; /* h3 */
+  --font-size-nav: 14px;
+  --font-size-button: 13px;
+  --font-size-body: 12px;       /* chips, trending */
+  --font-size-small: 11px;      /* descrições, links, contagem */
+  --font-size-caption: 10px;    /* rank, rating, textos auxiliares */
+  --font-size-overline: 9px;    /* eyebrow, footer */
+  --font-size-tag: 8px;
+  --font-size-micro: 7px;       /* eyebrow do "em breve" */
+
+  --line-height-tight: 1.15;
+  --line-height-snug: 1.25;
+  --line-height-relaxed: 1.6;
+
+  --letter-spacing-display: -1.6px;
+  --letter-spacing-logo: -0.8px;
+  --letter-spacing-title: -0.7px;
+  --letter-spacing-card-title: -0.3px;
+  --letter-spacing-body: -0.1px;
+  --letter-spacing-rank: 0.6px;
+  --letter-spacing-caps: 1.3px;
+  --letter-spacing-overline: 1.5px;
+
+  /* ---------- Cores: marca ---------- */
+  --color-primary: #6258e8;
+  --color-primary-hover: #5249d5;
+  --color-primary-text-hover: #554bd9;
+  --color-primary-subtle: #f2f0ff;
+  --color-primary-subtle-strong: #efedff;
+  --color-primary-border: #ccc7fa;
+  --color-primary-border-soft: #e3e0fb;
+  --color-primary-muted-text: #7f79b7;
+  --gradient-primary-soft: linear-gradient(135deg, #f3f1ff, #fafaff);
+
+  /* ---------- Cores: texto ---------- */
+  --color-text-primary: #17202e;
+  --color-text-heading: #18202d;
+  --color-text-strong: #1c2330;
+  --color-text-emphasis: #252d3b;
+  --color-text-secondary: #3f4654;
+  --color-text-icon: #4d5461;
+  --color-text-chip: #555c6b;
+  --color-text-tag: #686e7a;
+  --color-text-muted: #777d8b;
+  --color-text-muted-alt: #777d8c; /* quase igual a text-muted; candidato a unificar */
+  --color-text-description: #7e8491;
+  --color-text-caps: #848995;
+  --color-text-subtle: #888d98;
+  --color-text-overline: #8a8f9e;
+  --color-text-faint: #999da7;
+  --color-text-placeholder: #a0a4ae;
+  --color-text-footer: #a3a7b0;
+  --color-text-rank: #c2c5ce;
+  --color-text-inverse: #ffffff;
+
+  /* ---------- Cores: superfícies ---------- */
+  --color-bg-page: #f2f4fa;
+  --color-bg-shell: rgba(255, 255, 255, 0.92);
+  --color-surface: #ffffff;
+  --color-surface-subtle: #fafafd;
+  --color-surface-hover: #f8f8fb;
+  --color-surface-tag: #f4f5f8;
+  --bg-page-glow:
+    radial-gradient(circle at 10% 0%, rgba(108, 99, 255, 0.09), transparent 28rem),
+    radial-gradient(circle at 95% 40%, rgba(45, 181, 160, 0.07), transparent 24rem),
+    #f2f4fa;
+
+  /* ---------- Cores: bordas ---------- */
+  --color-border-shell: rgba(31, 42, 68, 0.08);
+  --color-border-default: #dfe2ea;
+  --color-border-strong: #c9ccd6;
+  --color-border-header: #e9ebf2;
+  --color-border-card: #e9eaf0;
+  --color-border-panel: #e5e7ee;
+  --color-border-chip: #e3e5eb;
+  --color-border-upvote: #dfe2e9;
+  --color-border-divider: #e2e4ea;
+  --color-border-soft: #ececf2;
+  --color-border-hairline: #ececf1;
+  --color-border-footer: #eceef3;
+
+  /* ---------- Cores: feedback / destaque ---------- */
+  --color-live: #f26b55;
+  --color-live-ring: rgba(242, 107, 85, 0.12);
+  --color-star: #f5ad32;
+
+  /* ---------- Cores: acentos de produto ---------- */
+  --accent-green-fg: #188d78;
+  --accent-green-bg: #e9faf5;
+  --accent-green-inner: #bdf0df;
+  --accent-green-soft: #dff8ef;
+  --accent-green-deep: #187f6d;
+  --accent-green-tint: #c9f1e5;
+
+  --accent-blue-fg: #267bc7;
+  --accent-blue-bg: #eaf5ff;
+  --accent-blue-inner: #bfe2ff;
+  --accent-blue-soft: #dcefff;
+
+  --accent-yellow-fg: #c98112;
+  --accent-yellow-bg: #fff8df;
+  --accent-yellow-inner: #ffe4a1;
+
+  --accent-purple-fg: #694fd2;
+  --accent-purple-bg: #f1edff;
+  --accent-purple-inner: #d8cbff;
+
+  /* ---------- Espaçamento (valores usados no layout) ---------- */
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-4-5: 18px;
+  --space-5: 20px;
+  --space-5-5: 22px;
+  --space-6-5: 26px;
+  --space-8: 32px;
+  --space-8-5: 34px;
+  --space-9: 36px;
+  --space-10-5: 42px;
+  --space-11-5: 46px;
+
+  /* ---------- Raios ---------- */
+  --radius-xs: 6px;    /* tag */
+  --radius-indicator: 9px;
+  --radius-sm: 11px;   /* logo mark, coming logo */
+  --radius-md: 12px;   /* botões, ícone interno */
+  --radius-upvote: 13px;
+  --radius-icon: 15px; /* review icon */
+  --radius-lg: 16px;   /* trending, app icon, review card */
+  --radius-xl: 18px;   /* app card, coming card */
+  --radius-shell: 26px;
+  --radius-pill: 99px;
+  --radius-full: 50%;
+
+  /* ---------- Sombras ---------- */
+  --shadow-shell: 0 28px 70px rgba(37, 44, 74, 0.09);
+  --shadow-card-hover: 0 14px 36px rgba(33, 41, 67, 0.08);
+  --shadow-panel-hover: 0 12px 28px rgba(33, 41, 67, 0.07);
+  --shadow-primary: 0 8px 20px rgba(98, 88, 232, 0.22);
+  --shadow-primary-hover: 0 10px 24px rgba(98, 88, 232, 0.3);
+  --shadow-primary-sm: 0 7px 16px rgba(98, 88, 232, 0.22);
+  --shadow-logo: 0 7px 16px rgba(98, 88, 232, 0.25);
+  --shadow-live-ring: 0 0 0 5px var(--color-live-ring);
+
+  /* ---------- Efeitos ---------- */
+  --blur-shell: blur(20px);
+
+  /* ---------- Movimento ---------- */
+  --duration-fast: 0.2s;
+  --duration-base: 0.22s;
+  --duration-slow: 0.25s;
+  --easing-default: ease;
+  --lift-sm: translateY(-1px);
+  --lift-md: translateY(-2px);
+  --nudge-left: translateX(-3px);
+  --tilt-logo: rotate(-6deg);
+  --tilt-icon: rotate(-7deg);
+  --tilt-review: rotate(7deg);
+
+  /* ---------- Layout ---------- */
+  --shell-max-width: 1360px;
+  --shell-gutter: 48px;
+  --header-height: 76px;
+  --content-columns: minmax(0, 1.78fr) minmax(360px, 1fr);
+  --breakpoint-tablet: 900px;
+  --breakpoint-mobile: 560px;
+
+  /* ---------- Tamanhos de componentes ---------- */
+  --size-button-height: 42px;
+  --size-button-min-width: 88px;
+  --size-logo-mark: 34px;
+  --size-app-icon: 58px;
+  --size-review-icon: 50px;
+  --size-coming-logo: 38px;
+  --size-upvote-w: 54px;
+  --size-upvote-h: 62px;
+  --size-badge: 28px;
+  --size-dot: 8px;
+}
