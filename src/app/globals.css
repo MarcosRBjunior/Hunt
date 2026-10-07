@@ -1,7 +1,8 @@
+@import "tailwindcss";
+
 /*
- * Bloco @theme do Tailwind v4 usado pelo projeto (cópia de src/app/globals.css).
- * Para usar em outro projeto: @import "tailwindcss"; e cole este bloco.
- * A variável --font-manrope vem do next/font; fora do Next, troque por 'Manrope'.
+ * Tokens do design system "nova" (docs/design/DESIGN-SYSTEM.md), com os ajustes
+ * aprovados: fonte mínima de 11px, textos com contraste AA e cinzas consolidados.
  */
 @theme {
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
@@ -94,4 +95,53 @@
   --shadow-primary-sm: 0 7px 16px rgb(98 88 232 / 0.22);
   --shadow-logo: 0 7px 16px rgb(98 88 232 / 0.25);
   --shadow-live-ring: 0 0 0 5px rgb(242 107 85 / 0.12);
+}
+
+@layer base {
+  html {
+    font-synthesis: none;
+  }
+
+  body {
+    min-width: 320px;
+    color: var(--color-ink);
+    background:
+      radial-gradient(
+        circle at 10% 0%,
+        rgb(108 99 255 / 0.09),
+        transparent 28rem
+      ),
+      radial-gradient(
+        circle at 95% 40%,
+        rgb(45 181 160 / 0.07),
+        transparent 24rem
+      ),
+      var(--color-page);
+  }
+
+  /*
+   * Anel de foco para navegação por teclado (ausente no Make). A cor fica fixa
+   * em todo elemento para o transition-colors não animar o anel a partir da cor
+   * do texto.
+   */
+  *,
+  ::before,
+  ::after {
+    outline-color: rgb(98 88 232 / 0.45);
+  }
+
+  :focus-visible {
+    outline: 3px solid rgb(98 88 232 / 0.45);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
 }
