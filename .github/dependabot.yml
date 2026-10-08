@@ -8,6 +8,13 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # @types/node acompanha o runtime (Node 22, ver .nvmrc e engines).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # O typescript-eslint limita a versão do TypeScript; atualizar junto, à mão.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
