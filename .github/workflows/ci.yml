@@ -29,6 +29,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # O postinstall roda `prisma generate` (não precisa de banco).
       - name: Instalar dependências
         run: npm ci
 
@@ -40,7 +41,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # prisma validate entra na Fase 4; Postgres como service container na Fase 5.
+      - name: Prisma validate
+        run: npx prisma validate
+
+      # Postgres como service container entra na Fase 5 (testes de integração).
 
       - name: Testes
         run: npm run test:coverage

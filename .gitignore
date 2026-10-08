@@ -34,3 +34,6 @@ npm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Prisma Client gerado (`prisma generate` roda no postinstall)
+/src/generated/
