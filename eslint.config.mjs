@@ -23,6 +23,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "coverage/**",
     "next-env.d.ts",
+    // Prisma Client gerado por `prisma generate`.
+    "src/generated/**",
     // Referência do Figma Make (app Vite separado), fora do projeto.
     "docs/**",
   ]),

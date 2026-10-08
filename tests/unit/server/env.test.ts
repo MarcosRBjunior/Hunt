@@ -3,14 +3,46 @@ import { describe, expect, it } from "vitest";
 import { parseEnv } from "@/server/env";
 
 const valid = { PRODUCT_SOURCE: "mock", LOG_LEVEL: "info" };
+const databaseUrl = "postgresql://hunt:hunt@localhost:5435/hunt";
 
 describe("parseEnv", () => {
   it("aceita um ambiente válido", () => {
-    expect(parseEnv({ ...valid, PRODUCT_SOURCE: "prisma" })).toEqual({
-      PRODUCT_SOURCE: "prisma",
-      LOG_LEVEL: "info",
-    });
+    expect(parseEnv(valid)).toEqual(valid);
   });
+
+  it("aceita PRODUCT_SOURCE=prisma com DATABASE_URL", () => {
+    const source = {
+      ...valid,
+      PRODUCT_SOURCE: "prisma",
+      DATABASE_URL: databaseUrl,
+    };
+
+    expect(parseEnv(source)).toEqual(source);
+  });
+
+  it("falha com PRODUCT_SOURCE=prisma sem DATABASE_URL", () => {
+    expect(() => parseEnv({ ...valid, PRODUCT_SOURCE: "prisma" })).toThrow(
+      "DATABASE_URL",
+    );
+  });
+
+  it("trata DATABASE_URL vazia (como no .env.example) como ausente", () => {
+    expect(parseEnv({ ...valid, DATABASE_URL: "", DIRECT_URL: "" })).toEqual(
+      valid,
+    );
+    expect(() =>
+      parseEnv({ ...valid, PRODUCT_SOURCE: "prisma", DATABASE_URL: "" }),
+    ).toThrow("DATABASE_URL");
+  });
+
+  it.each(["DATABASE_URL", "DIRECT_URL"])(
+    "falha com %s que não seja postgres(ql)://",
+    (name) => {
+      expect(() =>
+        parseEnv({ ...valid, [name]: "mysql://u:p@localhost:3306/db" }),
+      ).toThrow(name);
+    },
+  );
 
   it("ignora variáveis que não fazem parte do schema", () => {
     expect(parseEnv({ ...valid, PATH: "/usr/bin" })).toEqual(valid);
