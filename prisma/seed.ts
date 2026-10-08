@@ -116,7 +116,8 @@ async function main() {
         const topicIds = await seedTopics(tx);
         if (demo) await seedDemo(tx, topicIds);
       },
-      { timeout: 60_000 },
+      // maxWait: abrir a 1ª conexão num banco remoto (SSL) passa dos 2 s padrão.
+      { maxWait: 15_000, timeout: 60_000 },
     );
 
     const [topics, products, users, votes, reviews] = await Promise.all([
