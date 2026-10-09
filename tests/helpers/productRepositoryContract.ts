@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ProductRepository } from "@/server/repositories/productRepository";
-import {
-  buildProduct,
-  type ProductFixture,
-} from "../../../helpers/buildProduct";
+import { buildProduct, type ProductFixture } from "./buildProduct";
 
 /**
  * Contrato que toda implementação de ProductRepository precisa cumprir.
@@ -58,6 +55,39 @@ export function describeProductRepositoryContract(
       const products = await repository.listLaunched();
 
       expect(products).toHaveLength(60);
+    });
+
+    it("devolve as tags de cada produto em ordem alfabética pelo nome", async () => {
+      const repository = await setup([
+        buildProduct({
+          status: "LAUNCHED",
+          review: { rating: 5, summary: null },
+          topics: [
+            { slug: "tech", name: "Tech" },
+            { slug: "saas", name: "SaaS" },
+            { slug: "ia", name: "Inteligência artificial" },
+          ],
+        }),
+        buildProduct({
+          status: "UPCOMING",
+          topics: [
+            { slug: "saas", name: "SaaS" },
+            { slug: "produtividade", name: "Produtividade" },
+          ],
+        }),
+      ]);
+
+      const [launched] = await repository.listLaunched();
+      const [reviewed] = await repository.listReviewed(3);
+      const [upcoming] = await repository.listUpcoming();
+
+      const expected = ["ia", "saas", "tech"];
+      expect(launched?.topics.map((topic) => topic.slug)).toEqual(expected);
+      expect(reviewed?.topics.map((topic) => topic.slug)).toEqual(expected);
+      expect(upcoming?.topics.map((topic) => topic.slug)).toEqual([
+        "produtividade",
+        "saas",
+      ]);
     });
 
     it("deixa produtos UPCOMING fora da lista principal", async () => {

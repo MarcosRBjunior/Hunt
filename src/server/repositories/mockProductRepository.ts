@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { TOPIC_SLUGS } from "@/lib/topics";
+import { sortTopicsByName, TOPIC_SLUGS } from "@/lib/topics";
 import rawProducts from "@/mocks/products.json";
 
 import type {
@@ -55,7 +55,7 @@ function newestFirst(a: Product, b: Product): number {
 }
 
 function toProduct({ review, ...product }: MockProductRecord): Product {
-  return product;
+  return { ...product, topics: sortTopicsByName(product.topics) };
 }
 
 function hasReview(
@@ -86,7 +86,8 @@ export class MockProductRepository implements ProductRepository {
       .toSorted(
         (a, b) => b.review.rating - a.review.rating || newestFirst(a, b),
       )
-      .slice(0, limit);
+      .slice(0, limit)
+      .map((record) => ({ ...toProduct(record), review: record.review }));
   }
 
   async listUpcoming(): Promise<Product[]> {

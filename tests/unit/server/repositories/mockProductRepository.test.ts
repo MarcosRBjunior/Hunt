@@ -4,7 +4,7 @@ import {
   MockProductRepository,
   parseMockProducts,
 } from "@/server/repositories/mockProductRepository";
-import { describeProductRepositoryContract } from "./productRepository.contract";
+import { describeProductRepositoryContract } from "../../../helpers/productRepositoryContract";
 
 describeProductRepositoryContract(
   "MockProductRepository",
