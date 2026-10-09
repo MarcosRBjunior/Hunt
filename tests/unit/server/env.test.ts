@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { parseEnv } from "@/server/env";
 
-const valid = { PRODUCT_SOURCE: "mock", LOG_LEVEL: "info" };
+const valid = {
+  PRODUCT_SOURCE: "mock",
+  LOG_LEVEL: "info",
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+    "pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk",
+  CLERK_SECRET_KEY: "sk_test_fake",
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL: "/sign-in",
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL: "/sign-up",
+};
 const databaseUrl = "postgresql://hunt:hunt@localhost:5435/hunt";
 
 describe("parseEnv", () => {
@@ -48,15 +56,19 @@ describe("parseEnv", () => {
     expect(parseEnv({ ...valid, PATH: "/usr/bin" })).toEqual(valid);
   });
 
-  it.each(["PRODUCT_SOURCE", "LOG_LEVEL"])(
-    "falha quando %s está ausente",
-    (name) => {
-      const source: Record<string, string | undefined> = { ...valid };
-      delete source[name];
+  it.each([
+    "PRODUCT_SOURCE",
+    "LOG_LEVEL",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+    "CLERK_SECRET_KEY",
+    "NEXT_PUBLIC_CLERK_SIGN_IN_URL",
+    "NEXT_PUBLIC_CLERK_SIGN_UP_URL",
+  ])("falha quando %s está ausente", (name) => {
+    const source: Record<string, string | undefined> = { ...valid };
+    delete source[name];
 
-      expect(() => parseEnv(source)).toThrow(name);
-    },
-  );
+    expect(() => parseEnv(source)).toThrow(name);
+  });
 
   it("falha com PRODUCT_SOURCE fora de mock|prisma", () => {
     expect(() => parseEnv({ ...valid, PRODUCT_SOURCE: "supabase" })).toThrow(
@@ -68,5 +80,20 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...valid, LOG_LEVEL: "verbose" })).toThrow(
       "LOG_LEVEL",
     );
+  });
+
+  it("falha com chaves do Clerk trocadas (secreta no lugar da pública)", () => {
+    expect(() =>
+      parseEnv({
+        ...valid,
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "sk_test_fake",
+      }),
+    ).toThrow("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
+  });
+
+  it("falha se a URL de login não for a rota do app", () => {
+    expect(() =>
+      parseEnv({ ...valid, NEXT_PUBLIC_CLERK_SIGN_IN_URL: "/login" }),
+    ).toThrow("NEXT_PUBLIC_CLERK_SIGN_IN_URL");
   });
 });

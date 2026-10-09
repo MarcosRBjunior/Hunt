@@ -10,6 +10,12 @@ export default defineConfig({
     env: {
       PRODUCT_SOURCE: "mock",
       LOG_LEVEL: "silent",
+      // Chaves fictícias em formato válido: os testes nunca falam com o Clerk.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+        "pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk",
+      CLERK_SECRET_KEY: "sk_test_fake",
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: "/sign-in",
+      NEXT_PUBLIC_CLERK_SIGN_UP_URL: "/sign-up",
     },
     // Testes .ts rodam em Node; testes .tsx (componentes) rodam no jsdom.
     // Os de integração precisam do Postgres e rodam à parte
