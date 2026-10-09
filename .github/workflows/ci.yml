@@ -21,6 +21,21 @@ jobs:
       PRODUCT_SOURCE: mock
       LOG_LEVEL: silent
       NEXT_TELEMETRY_DISABLED: 1
+    # Postgres dos testes de integração (mesma versão do docker-compose e do Railway).
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: hunt
+          POSTGRES_PASSWORD: hunt
+          POSTGRES_DB: hunt_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hunt -d hunt_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
     steps:
       - uses: actions/checkout@v7
 
@@ -44,10 +59,15 @@ jobs:
       - name: Prisma validate
         run: npx prisma validate
 
-      # Postgres como service container entra na Fase 5 (testes de integração).
-
       - name: Testes
         run: npm run test:coverage
+
+      # Aplica as migrations (com os CHECKs) no banco de teste e roda o contrato
+      # do ProductRepository contra o Postgres.
+      - name: Testes de integração
+        run: npm run test:integration
+        env:
+          TEST_DATABASE_URL: postgresql://hunt:hunt@localhost:5432/hunt_test
 
       - name: Build
         run: npm run build

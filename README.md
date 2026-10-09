@@ -23,7 +23,7 @@ npm run dev
 
 A aplicação sobe em http://localhost:3000. Se faltar alguma variável de ambiente, o `dev` e o `build` falham na hora com a lista do que está errado.
 
-Por enquanto a home lê os produtos do mock (`PRODUCT_SOURCE=mock`). A leitura do banco entra na Fase 5.
+`PRODUCT_SOURCE` escolhe de onde vêm os produtos: `mock` lê `src/mocks/products.json` e `prisma` lê o banco (exige `DATABASE_URL`). A troca não muda nenhum componente: os dois repositórios cumprem o mesmo contrato e devolvem os mesmos dados.
 
 ## Scripts
 
@@ -37,6 +37,7 @@ Por enquanto a home lê os produtos do mock (`PRODUCT_SOURCE=mock`). A leitura d
 | `npm run format` / `format:check` | Prettier (escreve / só confere)                               |
 | `npm test`                        | Testes (Vitest)                                               |
 | `npm run test:coverage`           | Testes com cobertura (mínimo de 80% em `src/server/services`) |
+| `npm run test:integration`        | Testes de integração no Postgres (precisa do `npm run db:up`) |
 | `npm run db:up` / `db:down`       | Sobe / derruba o Postgres do `docker-compose.yml`             |
 | `npm run db:migrate`              | Cria e aplica migrations em desenvolvimento                   |
 | `npm run db:deploy`               | Aplica as migrations pendentes (sem criar novas)              |
@@ -65,6 +66,17 @@ O seed (`prisma/seed.ts`) roda quantas vezes for preciso sem duplicar nada:
 
 Em produção (Railway) a variável fica vazia e o banco começa só com os topics. As migrations de produção rodam num job do GitHub no merge na `main` (Fase 9), nunca no build da Vercel.
 
+### Ambientes
+
+| Ambiente        | `PRODUCT_SOURCE`      | Banco                                            |
+| --------------- | --------------------- | ------------------------------------------------ |
+| Local           | `mock` ou `prisma`    | `hunt` no Docker (com a demo)                    |
+| Testes          | —                     | `hunt_test` no Docker (criado e migrado sozinho) |
+| Preview Vercel  | `prisma`              | `hunt_preview` no Railway (com a demo)           |
+| Produção Vercel | `mock` até a `v2.0.0` | `railway` no Railway (só os topics)              |
+
+Os testes de integração (`tests/integration/`) rodam o mesmo contrato do mock contra o Postgres. Por segurança, eles só aceitam um banco cujo nome termina em `_test`, porque apagam as tabelas entre um teste e outro. No CI, o Postgres sobe como service container.
+
 No Railway, a URL é a `DATABASE_PUBLIC_URL` do serviço Postgres (a `DATABASE_URL` interna só funciona dentro do Railway) com `?sslmode=no-verify` no fim. O certificado do Railway é autoassinado: com `sslmode=require` o driver `pg` recusa a conexão e, sem parâmetro nenhum, conecta sem SSL. `no-verify` criptografa a conexão sem validar o certificado, e funciona tanto no driver quanto no CLI do Prisma.
 
 ## API
@@ -73,7 +85,7 @@ No Railway, a URL é a `DATABASE_PUBLIC_URL` do serviço Postgres (a `DATABASE_U
 | ------ | ------------------ | -------------------------------------------------------------------------------------------------------- |
 | GET    | `/api/v1/products` | `{ "data": ProductDTO[] }` com os produtos lançados, por votos (e, no empate, os mais recentes primeiro) |
 
-No nível 1 os dados vêm de `src/mocks/products.json`.
+A fonte dos dados depende de `PRODUCT_SOURCE` (veja [Banco de dados](#banco-de-dados)).
 
 ## Design
 

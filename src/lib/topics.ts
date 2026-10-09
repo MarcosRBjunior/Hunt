@@ -14,7 +14,11 @@ export const TOPIC_SLUGS = SEED_TOPICS.map((topic) => topic.slug) as [
   ...TopicSlug[],
 ];
 
-/** Ordem de exibição: alfabética pelo nome, como no wireframe. */
-export const TOPICS_BY_NAME = [...SEED_TOPICS].sort((a, b) =>
-  a.name.localeCompare(b.name, "pt-BR"),
-);
+/** Ordem de exibição dos topics (barra, categorias e tags dos cards): alfabética pelo nome. */
+export function sortTopicsByName<T extends { name: string }>(
+  topics: readonly T[],
+): T[] {
+  return topics.toSorted((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+}
+
+export const TOPICS_BY_NAME = sortTopicsByName(SEED_TOPICS);
