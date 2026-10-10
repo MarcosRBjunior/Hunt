@@ -13,6 +13,12 @@ export function createPrismaClient(connectionString: string): PrismaClient {
       connectionString,
       connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
     }),
+    transactionOptions: {
+      // O padrão (2 s) para abrir a transação é menor que o tempo de conectar
+      // no Railway (1,4–2 s medidos na Fase 4): espera a conexão abrir.
+      maxWait: CONNECTION_TIMEOUT_MS + 1_000,
+      timeout: 10_000,
+    },
   });
 }
 

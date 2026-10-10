@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { sortTopicsByName, TOPIC_SLUGS } from "@/lib/topics";
+import { httpUrlSchema } from "@/lib/validation/common";
 import rawProducts from "@/mocks/products.json";
 
 import type {
@@ -9,16 +10,15 @@ import type {
   ProductRepository,
   ReviewedProduct,
 } from "./productRepository";
-
-const httpUrl = z.url({ protocol: /^https?$/, hostname: z.regexes.domain });
+import { ReadOnlySourceError } from "./readOnlySource";
 
 // Valida o JSON com as mesmas restrições do banco, para o mock não divergir dele.
 const mockProductSchema = z.object({
   id: z.uuid(),
   title: z.string().min(1).max(80),
   description: z.string().min(1).max(500),
-  url: httpUrl,
-  logoUrl: httpUrl.nullable(),
+  url: httpUrlSchema,
+  logoUrl: httpUrlSchema.nullable(),
   upvotes: z.int().nonnegative(),
   visits: z.int().nonnegative(),
   status: z.enum(["LAUNCHED", "UPCOMING"]),
@@ -95,5 +95,30 @@ export class MockProductRepository implements ProductRepository {
       .filter((record) => record.status === "UPCOMING")
       .map(toProduct)
       .toSorted(newestFirst);
+  }
+
+  async listAll(): Promise<Product[]> {
+    return this.records.map(toProduct).toSorted(newestFirst);
+  }
+
+  async findById(id: string): Promise<Product | null> {
+    const record = this.records.find((candidate) => candidate.id === id);
+    return record ? toProduct(record) : null;
+  }
+
+  async create(): Promise<Product> {
+    throw new ReadOnlySourceError();
+  }
+
+  async update(): Promise<Product | null> {
+    throw new ReadOnlySourceError();
+  }
+
+  async delete(): Promise<boolean> {
+    throw new ReadOnlySourceError();
+  }
+
+  async incrementVisits(): Promise<boolean> {
+    throw new ReadOnlySourceError();
   }
 }

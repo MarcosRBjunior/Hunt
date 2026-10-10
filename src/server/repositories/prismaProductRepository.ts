@@ -1,8 +1,11 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { sortTopicsByName } from "@/lib/topics";
+import { sortTopicsByName, type TopicSlug } from "@/lib/topics";
 
+import { isPrismaError } from "./prismaErrors";
 import type {
+  NewProduct,
   Product,
+  ProductChanges,
   ProductRepository,
   ReviewedProduct,
 } from "./productRepository";
@@ -35,6 +38,11 @@ function toProduct(row: ProductRow): Product {
     topics: sortTopicsByName(row.topics.map(({ topic }) => topic)),
     createdAt: row.createdAt,
   };
+}
+
+/** Liga o produto aos topics do seed pelo slug. */
+function connectTopics(slugs: readonly TopicSlug[]) {
+  return slugs.map((slug) => ({ topic: { connect: { slug } } }));
 }
 
 function toReviewedProducts(rows: ReviewedProductRow[]): ReviewedProduct[] {
@@ -80,5 +88,71 @@ export class PrismaProductRepository implements ProductRepository {
     });
 
     return rows.map(toProduct);
+  }
+
+  async listAll(): Promise<Product[]> {
+    const rows = await this.prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+      include: productInclude,
+    });
+
+    return rows.map(toProduct);
+  }
+
+  async findById(id: string): Promise<Product | null> {
+    const row = await this.prisma.product.findUnique({
+      where: { id },
+      include: productInclude,
+    });
+
+    return row ? toProduct(row) : null;
+  }
+
+  async create({ topicSlugs, ...fields }: NewProduct): Promise<Product> {
+    const row = await this.prisma.product.create({
+      data: { ...fields, topics: { create: connectTopics(topicSlugs) } },
+      include: productInclude,
+    });
+
+    return toProduct(row);
+  }
+
+  async update(
+    id: string,
+    { topicSlugs, ...fields }: ProductChanges,
+  ): Promise<Product | null> {
+    try {
+      const row = await this.prisma.product.update({
+        where: { id },
+        data: {
+          ...fields,
+          // Escrita aninhada: apagar e recriar os vínculos é uma transação só.
+          ...(topicSlugs && {
+            topics: { deleteMany: {}, create: connectTopics(topicSlugs) },
+          }),
+        },
+        include: productInclude,
+      });
+
+      return toProduct(row);
+    } catch (error) {
+      if (isPrismaError(error, "P2025")) return null;
+      throw error;
+    }
+  }
+
+  async delete(id: string): Promise<boolean> {
+    // As FKs com ON DELETE CASCADE levam votos, topics e revisão junto.
+    const { count } = await this.prisma.product.deleteMany({ where: { id } });
+    return count > 0;
+  }
+
+  async incrementVisits(id: string): Promise<boolean> {
+    // `visits = visits + 1` no próprio UPDATE: cliques simultâneos não se perdem.
+    const { count } = await this.prisma.product.updateMany({
+      where: { id },
+      data: { visits: { increment: 1 } },
+    });
+    return count > 0;
   }
 }

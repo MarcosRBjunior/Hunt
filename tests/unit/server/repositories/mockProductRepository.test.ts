@@ -4,6 +4,7 @@ import {
   MockProductRepository,
   parseMockProducts,
 } from "@/server/repositories/mockProductRepository";
+import type { ProductRepository } from "@/server/repositories/productRepository";
 import { describeProductRepositoryContract } from "../../../helpers/productRepositoryContract";
 
 describeProductRepositoryContract(
@@ -36,6 +37,37 @@ describe("MockProductRepository com src/mocks/products.json", () => {
       ],
     );
     expect(upcoming.map((product) => product.title)).toEqual(["zwelie"]);
+  });
+});
+
+describe("MockProductRepository é só leitura (PRODUCT_SOURCE=mock)", () => {
+  const repository: ProductRepository = new MockProductRepository();
+  const id = "a59e45f4-7972-4bf3-ae41-0d6136c45f8c";
+
+  it.each([
+    [
+      "create",
+      () =>
+        repository.create({
+          title: "Novo",
+          description: "Descrição.",
+          url: "https://example.com",
+          logoUrl: null,
+          status: "LAUNCHED",
+          topicSlugs: [],
+        }),
+    ],
+    ["update", () => repository.update(id, { title: "Outro" })],
+    ["delete", () => repository.delete(id)],
+    ["incrementVisits", () => repository.incrementVisits(id)],
+  ])("%s falha avisando para usar PRODUCT_SOURCE=prisma", async (_, write) => {
+    await expect(write()).rejects.toThrow("PRODUCT_SOURCE=prisma");
+  });
+
+  it("não muda os dados depois de uma escrita recusada", async () => {
+    await repository.incrementVisits(id).catch(() => {});
+
+    expect((await repository.findById(id))?.visits).toBe(1240);
   });
 });
 

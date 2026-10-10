@@ -30,6 +30,14 @@ export type ReviewedProductDTO = ProductDTO & {
   review: ReviewDTO;
 };
 
+/** Resposta de `POST` e `DELETE /products/{id}/vote`. */
+export type VoteDTO = {
+  productId: string;
+  /** Total depois do voto (ou da remoção). */
+  upvotes: number;
+  viewerHasVoted: boolean;
+};
+
 export type ApiSuccess<T> = {
   data: T;
 };

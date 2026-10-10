@@ -1,3 +1,4 @@
+import type { TopicSlug } from "@/lib/topics";
 import type { ProductStatus } from "@/types/api";
 
 export type Topic = {
@@ -25,6 +26,19 @@ export type EditorialReview = {
 
 export type ReviewedProduct = Product & { review: EditorialReview };
 
+/** Campos que o admin define. `upvotes` e `visits` nunca vêm de fora (regra 7). */
+export type NewProduct = {
+  title: string;
+  description: string;
+  url: string;
+  logoUrl: string | null;
+  status: ProductStatus;
+  topicSlugs: TopicSlug[];
+};
+
+/** Só os campos enviados mudam; `topicSlugs` substitui a lista inteira. */
+export type ProductChanges = Partial<NewProduct>;
+
 export interface ProductRepository {
   /**
    * Produtos `LAUNCHED`, ordenados por `upvotes DESC, createdAt DESC`,
@@ -37,4 +51,22 @@ export interface ProductRepository {
 
   /** Produtos `UPCOMING`, por `createdAt DESC`. */
   listUpcoming(): Promise<Product[]>;
+
+  /** Todos os produtos (área admin), por `createdAt DESC`. */
+  listAll(): Promise<Product[]>;
+
+  /** Produto de qualquer status, ou `null`. */
+  findById(id: string): Promise<Product | null>;
+
+  /** Cria com 0 votos e 0 visitas. */
+  create(product: NewProduct): Promise<Product>;
+
+  /** `null` se o produto não existe. */
+  update(id: string, changes: ProductChanges): Promise<Product | null>;
+
+  /** Apaga em cascata votos, topics e revisão (regra 8). `false` se não existe. */
+  delete(id: string): Promise<boolean>;
+
+  /** `visits + 1`, atômico e sem deduplicar (regra 6). `false` se não existe. */
+  incrementVisits(id: string): Promise<boolean>;
 }

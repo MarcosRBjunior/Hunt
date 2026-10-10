@@ -1,13 +1,15 @@
 import { connection } from "next/server";
 
+import { getViewer } from "@/server/auth";
+import { ok, withErrorHandling } from "@/server/http";
 import { productService } from "@/server/services/productService";
-import type { ApiSuccess, ProductDTO } from "@/types/api";
 
-export async function GET() {
+export const GET = withErrorHandling(async () => {
   // Sempre em tempo de requisição: a lista muda com votos (sem cache no MVP).
   await connection();
 
-  const products = await productService.listLaunched();
+  // Login opcional: só preenche `viewerHasVoted`.
+  const viewer = await getViewer();
 
-  return Response.json({ data: products } satisfies ApiSuccess<ProductDTO[]>);
-}
+  return ok(await productService.listLaunched(viewer));
+});

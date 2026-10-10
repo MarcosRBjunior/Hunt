@@ -145,6 +145,62 @@ export function describeProductRepositoryContract(
       ]);
     });
 
+    it("findById: devolve o produto (de qualquer status) com as tags em ordem", async () => {
+      const upcoming = buildProduct({
+        title: "Em breve",
+        status: "UPCOMING",
+        topics: [
+          { slug: "tech", name: "Tech" },
+          { slug: "saas", name: "SaaS" },
+        ],
+      });
+      const repository = await setup([buildProduct(), upcoming]);
+
+      const found = await repository.findById(upcoming.id);
+
+      expect(found).toMatchObject({ id: upcoming.id, title: "Em breve" });
+      expect(found?.topics.map((topic) => topic.slug)).toEqual([
+        "saas",
+        "tech",
+      ]);
+      expect(found).not.toHaveProperty("review");
+    });
+
+    it("findById: devolve null para id inexistente", async () => {
+      const repository = await setup([buildProduct()]);
+
+      expect(
+        await repository.findById("00000000-0000-4000-8000-000000000000"),
+      ).toBeNull();
+    });
+
+    it("listAll: todos os status, do mais recente para o mais antigo", async () => {
+      const repository = await setup([
+        buildProduct({
+          title: "Antigo e mais votado",
+          upvotes: 500,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        }),
+        buildProduct({
+          title: "Em breve",
+          status: "UPCOMING",
+          createdAt: new Date("2026-03-01T00:00:00.000Z"),
+        }),
+        buildProduct({
+          title: "Recente",
+          createdAt: new Date("2026-02-01T00:00:00.000Z"),
+        }),
+      ]);
+
+      const products = await repository.listAll();
+
+      expect(products.map((product) => product.title)).toEqual([
+        "Em breve",
+        "Recente",
+        "Antigo e mais votado",
+      ]);
+    });
+
     it("listUpcoming: só UPCOMING, do mais recente para o mais antigo", async () => {
       const repository = await setup([
         buildProduct({ title: "Lançado", status: "LAUNCHED" }),
