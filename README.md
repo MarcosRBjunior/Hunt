@@ -6,7 +6,7 @@ Vitrine pública de produtos de startups, ordenada por upvotes. Visitantes naveg
 
 ## Stack
 
-Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS 4 · Prisma 7 + PostgreSQL · Zod · pino · Vitest. Nas próximas fases entram Clerk e Playwright. Deploy na Vercel, com o banco de produção no Railway.
+Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS 4 · Prisma 7 + PostgreSQL · Clerk · Zod · pino · Vitest. Na Fase 9 entra o Playwright. Deploy na Vercel, com o banco de produção no Railway.
 
 ## Como rodar
 
@@ -46,7 +46,7 @@ A aplicação sobe em http://localhost:3000. Se faltar alguma variável de ambie
 
 ## Variáveis de ambiente
 
-Todas ficam em `.env.example` e são validadas com Zod em `src/server/env.ts`. O schema cresce por fase: hoje exige `PRODUCT_SOURCE` (`mock` ou `prisma`) e `LOG_LEVEL`, e `DATABASE_URL` passa a ser obrigatória com `PRODUCT_SOURCE=prisma`. `DIRECT_URL` só é usada com pooler (o CLI do Prisma conecta direto). As do Clerk entram na Fase 6.
+Todas ficam em `.env.example` e são validadas com Zod em `src/server/env.ts`. O schema cresce por fase: hoje exige `PRODUCT_SOURCE` (`mock` ou `prisma`) e `LOG_LEVEL`, e `DATABASE_URL` passa a ser obrigatória com `PRODUCT_SOURCE=prisma`. `DIRECT_URL` só é usada com pooler (o CLI do Prisma conecta direto). As do Clerk (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` e as rotas `/sign-in` e `/sign-up`) são obrigatórias; o CI usa chaves fictícias em formato válido, porque nem o build nem os testes falam com o Clerk.
 
 O Prisma 7 não lê `.env*` sozinho: o `prisma.config.ts` e o seed carregam os mesmos arquivos que o Next via `@next/env`.
 
@@ -78,6 +78,16 @@ Em produção (Railway) a variável fica vazia e o banco começa só com os topi
 Os testes de integração (`tests/integration/`) rodam o mesmo contrato do mock contra o Postgres. Por segurança, eles só aceitam um banco cujo nome termina em `_test`, porque apagam as tabelas entre um teste e outro. No CI, o Postgres sobe como service container.
 
 No Railway, a URL é a `DATABASE_PUBLIC_URL` do serviço Postgres (a `DATABASE_URL` interna só funciona dentro do Railway) com `?sslmode=no-verify` no fim. O certificado do Railway é autoassinado: com `sslmode=require` o driver `pg` recusa a conexão e, sem parâmetro nenhum, conecta sem SSL. `no-verify` criptografa a conexão sem validar o certificado, e funciona tanto no driver quanto no CLI do Prisma.
+
+## Autenticação e segurança
+
+- **Clerk** com e-mail/senha e GitHub, em pt-BR. As páginas ficam em `/sign-in` e `/sign-up`.
+- O `src/proxy.ts` (o antigo middleware do Next) só disponibiliza a sessão. Quem decide o acesso é cada handler e cada página, com os helpers de `src/server/auth.ts`:
+  - `getViewer()`: quem está vendo, sem tocar no banco;
+  - `requireUser()`: 401 sem sessão; cria o usuário local (por `external_id`) na primeira ação autenticada, sem duplicar mesmo com cliques simultâneos;
+  - `requireAdmin()`: 401 sem sessão, 403 sem papel de admin.
+- **Admin** é quem tem `{"role": "admin"}` no _Public metadata_ do usuário no Clerk. O papel chega ao servidor pelo token de sessão, com esta customização em **Sessions › Customize session token**: `{"metadata": "{{user.public_metadata}}"}`. O `unsafeMetadata` (editável pelo próprio usuário) nunca é usado.
+- **Cabeçalhos**: CSP por lista de domínios (`src/lib/csp.ts`: scripts só do próprio site, do Clerk (instância e Clerk Protect, o antifraude) e do desafio anti-bot do Cloudflare; imagens `https:` para os logos), `X-Content-Type-Options: nosniff` e `Referrer-Policy: strict-origin-when-cross-origin`. O CSP automático do Clerk não é usado porque libera scripts de qualquer origem.
 
 ## API
 

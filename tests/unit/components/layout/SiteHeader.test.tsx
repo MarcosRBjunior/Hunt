@@ -42,7 +42,7 @@ describe("SiteHeader", () => {
     ).toBeNull();
   });
 
-  it("leva Login e Registro para as páginas do Clerk", () => {
+  it("mostra Login e Registro para o visitante", () => {
     render(<SiteHeader />);
 
     expect(

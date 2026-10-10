@@ -21,6 +21,12 @@ jobs:
       PRODUCT_SOURCE: mock
       LOG_LEVEL: silent
       NEXT_TELEMETRY_DISABLED: 1
+      # Chaves fictícias em formato válido: o build e os testes não falam com o
+      # Clerk, então o CI não precisa de segredo nenhum.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk
+      CLERK_SECRET_KEY: sk_test_ci
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+      NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
     # Postgres dos testes de integração (mesma versão do docker-compose e do Railway).
     services:
       postgres:

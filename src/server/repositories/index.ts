@@ -3,9 +3,15 @@ import { env } from "../env";
 import { MockProductRepository } from "./mockProductRepository";
 import { PrismaProductRepository } from "./prismaProductRepository";
 import type { ProductRepository } from "./productRepository";
+import { PrismaUserRepository, type UserRepository } from "./userRepository";
 
 /** `PRODUCT_SOURCE` escolhe a fonte; a UI não sabe qual é (CLAUDE.md › Arquitetura). */
 export const productRepository: ProductRepository =
   env.PRODUCT_SOURCE === "prisma"
     ? new PrismaProductRepository(getPrisma())
     : new MockProductRepository();
+
+/** Usuários só existem no banco (são criados na primeira ação autenticada). */
+export const userRepository: UserRepository = new PrismaUserRepository(
+  getPrisma,
+);
