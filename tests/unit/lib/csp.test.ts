@@ -32,12 +32,13 @@ describe("buildContentSecurityPolicy", () => {
     buildContentSecurityPolicy({ publishableKey, dev: false }),
   );
 
-  it("só aceita scripts do próprio site, do Clerk desta instância e do Cloudflare", () => {
+  it("só aceita scripts do próprio site, do Clerk (instância e Protect) e do Cloudflare", () => {
     expect(production["script-src"]).toEqual([
       "'self'",
       "'unsafe-inline'",
       "https://hunt-123.clerk.accounts.dev",
       "https://challenges.cloudflare.com",
+      "https://*.protect.clerk.com",
     ]);
   });
 

@@ -27,6 +27,7 @@ export function buildContentSecurityPolicy({
   const clerk = `https://${clerkFrontendApi(publishableKey)}`;
   // Desafio anti-bot do Clerk.
   const cloudflare = "https://challenges.cloudflare.com";
+  // Clerk Protect (antifraude): carrega script de cdn.protect.clerk.com.
   const clerkProtect = "https://*.protect.clerk.com";
 
   const directives: Record<string, string[]> = {
@@ -39,6 +40,7 @@ export function buildContentSecurityPolicy({
       ...(dev ? ["'unsafe-eval'"] : []),
       clerk,
       cloudflare,
+      clerkProtect,
     ],
     "connect-src": [
       "'self'",
