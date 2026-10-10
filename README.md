@@ -42,6 +42,7 @@ A aplicação sobe em http://localhost:3000. Se faltar alguma variável de ambie
 | `npm run db:migrate`              | Cria e aplica migrations em desenvolvimento                   |
 | `npm run db:deploy`               | Aplica as migrations pendentes (sem criar novas)              |
 | `npm run db:seed`                 | Seed idempotente (topics e, com `SEED_DEMO=true`, a demo)     |
+| `npm run db:reconcile`            | Acerta `upvotes = count(votes)` nos produtos que divergiram   |
 | `npm run db:studio`               | Prisma Studio                                                 |
 
 ## Variáveis de ambiente
@@ -87,15 +88,32 @@ No Railway, a URL é a `DATABASE_PUBLIC_URL` do serviço Postgres (a `DATABASE_U
   - `requireUser()`: 401 sem sessão; cria o usuário local (por `external_id`) na primeira ação autenticada, sem duplicar mesmo com cliques simultâneos;
   - `requireAdmin()`: 401 sem sessão, 403 sem papel de admin.
 - **Admin** é quem tem `{"role": "admin"}` no _Public metadata_ do usuário no Clerk. O papel chega ao servidor pelo token de sessão, com esta customização em **Sessions › Customize session token**: `{"metadata": "{{user.public_metadata}}"}`. O `unsafeMetadata` (editável pelo próprio usuário) nunca é usado.
+- **Escritas** (POST/PATCH/PUT/DELETE) só passam com o header `Origin` do próprio site (mesmo critério das Server Actions do Next: o host do `Origin` tem de bater com o `x-forwarded-host` ou o `host`). Sem ele, ou de outro site, a resposta é `403 INVALID_ORIGIN`. Escritas com corpo exigem `Content-Type: application/json`.
+- **Entradas** passam pelos schemas Zod de `src/lib/validation` (compartilhados com os formulários): ids são UUID antes de chegar ao banco, `url` e `logoUrl` só aceitam http(s) (o banco tem o mesmo CHECK) e campos fora do schema, como `upvotes` e `visits`, são descartados.
 - **Cabeçalhos**: CSP por lista de domínios (`src/lib/csp.ts`: scripts só do próprio site, do Clerk (instância e Clerk Protect, o antifraude) e do desafio anti-bot do Cloudflare; imagens `https:` para os logos), `X-Content-Type-Options: nosniff` e `Referrer-Policy: strict-origin-when-cross-origin`. O CSP automático do Clerk não é usado porque libera scripts de qualquer origem.
 
 ## API
 
-| Método | Rota               | Resposta                                                                                                 |
-| ------ | ------------------ | -------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/products` | `{ "data": ProductDTO[] }` com os produtos lançados, por votos (e, no empate, os mais recentes primeiro) |
+Sucesso: `{ "data": ... }`. Erro: `{ "error": { "code", "message", "details" } }`; em erros de validação, `details.fields` traz as mensagens por campo. Toda resposta tem `x-request-id`, o mesmo id da linha de log (JSON, via pino) daquela requisição.
 
-A fonte dos dados depende de `PRODUCT_SOURCE` (veja [Banco de dados](#banco-de-dados)).
+| Método | Rota                          | Acesso  | Sucesso                              | Erros                                                                                  |
+| ------ | ----------------------------- | ------- | ------------------------------------ | -------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/products`            | Público | 200 `ProductDTO[]`                   | —                                                                                      |
+| POST   | `/api/v1/products/{id}/vote`  | Usuário | 201 `VoteDTO`                        | 400, 401, 403, 404 `PRODUCT_NOT_FOUND`, 409 `ALREADY_VOTED`, 422 `PRODUCT_NOT_VOTABLE` |
+| DELETE | `/api/v1/products/{id}/vote`  | Usuário | 200 `VoteDTO`                        | 400, 401, 403, 404 `VOTE_NOT_FOUND`                                                    |
+| POST   | `/api/v1/products/{id}/visit` | Público | 204                                  | 400, 403, 404 `PRODUCT_NOT_FOUND`                                                      |
+| GET    | `/api/v1/admin/products`      | Admin   | 200 `ProductDTO[]` (todos os status) | 401, 403                                                                               |
+| POST   | `/api/v1/admin/products`      | Admin   | 201 `ProductDTO`                     | 400, 401, 403                                                                          |
+| PATCH  | `/api/v1/admin/products/{id}` | Admin   | 200 `ProductDTO`                     | 400, 401, 403, 404 `PRODUCT_NOT_FOUND`                                                 |
+| DELETE | `/api/v1/admin/products/{id}` | Admin   | 204                                  | 401, 403, 404 `PRODUCT_NOT_FOUND`                                                      |
+
+- **Lista principal**: produtos `LAUNCHED`, por votos (no empate, os mais recentes primeiro), sem paginação. Com sessão, `viewerHasVoted` marca os produtos em que o usuário votou.
+- **Voto**: toggle (a interface manda POST com o botão inativo e DELETE com ele ativo). Votar é uma transação (INSERT do voto + `upvotes + 1`); o UNIQUE `(user_id, product_id)` barra o repetido, mesmo com cliques simultâneos (`P2002` → 409). Remover tira 1 de `upvotes`, que nunca fica negativo. Produto `UPCOMING` não recebe voto.
+- **Visita**: cada clique soma 1 em `visits`, de qualquer perfil e sem deduplicar. Sem corpo, para funcionar com `navigator.sendBeacon`. Visitas só são exibidas: nunca entram na ordenação.
+- **Admin**: body `{ title (1–80), description (1–500), url, logoUrl?, status?, topicSlugs? }`. `url` e `logoUrl` só http(s); `topicSlugs` só os 5 do seed, sem repetição. No PATCH tudo é opcional e `topicSlugs` substitui a lista inteira. `upvotes` e `visits` no body são ignorados. Remover um produto apaga em cascata votos, topics e revisão.
+- **Reconciliação**: se `upvotes` divergir de `count(votes)`, `npm run db:reconcile` corrige (só mexe nos que divergiram e trava novos votos enquanto conta).
+
+A fonte dos dados depende de `PRODUCT_SOURCE` (veja [Banco de dados](#banco-de-dados)). Com `mock`, a API é só leitura: votos, visitas e admin precisam de `PRODUCT_SOURCE=prisma`.
 
 ## Design
 
