@@ -25,6 +25,16 @@ export function createAdminProductService({ productRepository }: Dependencies) {
       return products.map((product) => toProductDTO(product));
     },
 
+    /** Produto de qualquer status (página de edição). */
+    async get(productId: unknown): Promise<ProductDTO> {
+      const id = parseInput(idSchema, productId, "id");
+
+      const product = await productRepository.findById(id);
+      if (!product) throw productNotFound();
+
+      return toProductDTO(product);
+    },
+
     async create(body: unknown): Promise<ProductDTO> {
       const product = parseInput(createProductSchema, body);
       return toProductDTO(await productRepository.create(product));

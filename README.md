@@ -86,7 +86,9 @@ No Railway, a URL é a `DATABASE_PUBLIC_URL` do serviço Postgres (a `DATABASE_U
 - O `src/proxy.ts` (o antigo middleware do Next) só disponibiliza a sessão. Quem decide o acesso é cada handler e cada página, com os helpers de `src/server/auth.ts`:
   - `getViewer()`: quem está vendo, sem tocar no banco;
   - `requireUser()`: 401 sem sessão; cria o usuário local (por `external_id`) na primeira ação autenticada, sem duplicar mesmo com cliques simultâneos;
-  - `requireAdmin()`: 401 sem sessão, 403 sem papel de admin.
+  - `requireAdmin()`: 401 sem sessão, 403 sem papel de admin;
+  - `requireAdminPage()`: para as páginas de `/admin`; sem sessão vai para o login (e volta para a página pedida), sem papel de admin vai para `/acesso-negado`.
+- **Área admin** em `/admin/produtos`: tabela com todos os produtos, cadastro, edição e remoção (com confirmação). O formulário tem nome, descrição, site e logo; status e topics entram nas Fases 9 e 10. O link "Admin" do header só aparece para admin, mas é só atalho: páginas e API conferem o papel de novo no servidor.
 - **Admin** é quem tem `{"role": "admin"}` no _Public metadata_ do usuário no Clerk. O papel chega ao servidor pelo token de sessão, com esta customização em **Sessions › Customize session token**: `{"metadata": "{{user.public_metadata}}"}`. O `unsafeMetadata` (editável pelo próprio usuário) nunca é usado.
 - **Escritas** (POST/PATCH/PUT/DELETE) só passam com o header `Origin` do próprio site (mesmo critério das Server Actions do Next: o host do `Origin` tem de bater com o `x-forwarded-host` ou o `host`). Sem ele, ou de outro site, a resposta é `403 INVALID_ORIGIN`. Escritas com corpo exigem `Content-Type: application/json`.
 - **Entradas** passam pelos schemas Zod de `src/lib/validation` (compartilhados com os formulários): ids são UUID antes de chegar ao banco, `url` e `logoUrl` só aceitam http(s) (o banco tem o mesmo CHECK) e campos fora do schema, como `upvotes` e `visits`, são descartados.
@@ -109,7 +111,8 @@ Sucesso: `{ "data": ... }`. Erro: `{ "error": { "code", "message", "details" } }
 
 - **Lista principal**: produtos `LAUNCHED`, por votos (no empate, os mais recentes primeiro), sem paginação. Com sessão, `viewerHasVoted` marca os produtos em que o usuário votou.
 - **Voto**: toggle (a interface manda POST com o botão inativo e DELETE com ele ativo). Votar é uma transação (INSERT do voto + `upvotes + 1`); o UNIQUE `(user_id, product_id)` barra o repetido, mesmo com cliques simultâneos (`P2002` → 409). Remover tira 1 de `upvotes`, que nunca fica negativo. Produto `UPCOMING` não recebe voto.
-- **Visita**: cada clique soma 1 em `visits`, de qualquer perfil e sem deduplicar. Sem corpo, para funcionar com `navigator.sendBeacon`. Visitas só são exibidas: nunca entram na ordenação.
+- **Voto na tela**: o botão atualiza na hora (otimista) e volta se a API falhar. A lista não se reordena depois do voto; a nova posição aparece no próximo carregamento. Visitante vai para o login e volta para a página onde estava.
+- **Visita**: cada clique soma 1 em `visits`, de qualquer perfil e sem deduplicar. Sem corpo, para funcionar com `navigator.sendBeacon` (com `fetch` + `keepalive` de reserva); o link abre mesmo se o registro falhar. Visitas só são exibidas: nunca entram na ordenação.
 - **Admin**: body `{ title (1–80), description (1–500), url, logoUrl?, status?, topicSlugs? }`. `url` e `logoUrl` só http(s); `topicSlugs` só os 5 do seed, sem repetição. No PATCH tudo é opcional e `topicSlugs` substitui a lista inteira. `upvotes` e `visits` no body são ignorados. Remover um produto apaga em cascata votos, topics e revisão.
 - **Reconciliação**: se `upvotes` divergir de `count(votes)`, `npm run db:reconcile` corrige (só mexe nos que divergiram e trava novos votos enquanto conta).
 

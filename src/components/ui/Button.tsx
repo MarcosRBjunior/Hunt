@@ -3,16 +3,18 @@ import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "secondary";
+type Variant = "primary" | "secondary" | "danger";
 
 const base =
-  "inline-flex h-[42px] min-w-[88px] items-center justify-center gap-1.5 rounded-md border px-[18px] text-button font-bold transition duration-200 hover:-translate-y-0.5";
+  "inline-flex h-[42px] min-w-[88px] items-center justify-center gap-1.5 rounded-md border px-[18px] text-button font-bold transition duration-200 hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-60";
 
 const variants: Record<Variant, string> = {
   primary:
     "border-primary bg-primary text-white shadow-primary hover:bg-primary-hover hover:shadow-primary-hover",
   secondary:
     "border-line bg-surface text-ink-soft hover:border-line-strong hover:bg-surface-hover",
+  danger:
+    "border-danger bg-danger text-white hover:border-danger-hover hover:bg-danger-hover",
 };
 
 export function buttonClasses(variant: Variant, className?: string) {
