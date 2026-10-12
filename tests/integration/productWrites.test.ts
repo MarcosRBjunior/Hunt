@@ -207,3 +207,41 @@ describe("PrismaProductRepository.incrementVisits", () => {
     expect(await repository.incrementVisits(missingId)).toBe(false);
   });
 });
+
+describe("PrismaProductRepository.upsertReview", () => {
+  it("cria a revisão e, na segunda vez, substitui a mesma linha", async () => {
+    const product = buildProduct();
+    await insertProducts([product]);
+
+    expect(
+      await repository.upsertReview(product.id, {
+        rating: 3,
+        summary: "Bom",
+      }),
+    ).toEqual({ rating: 3, summary: "Bom" });
+    expect(
+      await repository.upsertReview(product.id, { rating: 5, summary: null }),
+    ).toEqual({ rating: 5, summary: null });
+
+    expect(await testPrisma.editorialReview.count()).toBe(1);
+    expect(await repository.findWithReview(product.id)).toMatchObject({
+      review: { rating: 5, summary: null },
+    });
+  });
+
+  it("devolve null para produto inexistente, sem gravar", async () => {
+    expect(
+      await repository.upsertReview(missingId, { rating: 5, summary: null }),
+    ).toBeNull();
+    expect(await testPrisma.editorialReview.count()).toBe(0);
+  });
+
+  it("o CHECK do banco recusa nota fora de 1 a 5", async () => {
+    const product = buildProduct();
+    await insertProducts([product]);
+
+    await expect(
+      repository.upsertReview(product.id, { rating: 6, summary: null }),
+    ).rejects.toThrow();
+  });
+});

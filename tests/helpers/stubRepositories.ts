@@ -17,10 +17,12 @@ export function stubProductRepository(
     listUpcoming: notConfigured("listUpcoming"),
     listAll: notConfigured("listAll"),
     findById: notConfigured("findById"),
+    findWithReview: notConfigured("findWithReview"),
     create: notConfigured("create"),
     update: notConfigured("update"),
     delete: notConfigured("delete"),
     incrementVisits: notConfigured("incrementVisits"),
+    upsertReview: notConfigured("upsertReview"),
     ...methods,
   };
 }

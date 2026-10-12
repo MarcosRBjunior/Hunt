@@ -42,27 +42,49 @@ describe("adminProductService.list", () => {
     ]);
     expect(products[0]).toHaveProperty("viewerHasVoted", false);
   });
+
+  it("traz a revisão de cada produto (coluna nota), ou null", async () => {
+    const service = serviceWith({
+      listAll: async () => [
+        buildProduct({ review: { rating: 5, summary: "Ótimo" } }),
+        buildProduct(),
+      ],
+    });
+
+    const products = await service.list();
+
+    expect(products.map((product) => product.review)).toEqual([
+      { rating: 5, summary: "Ótimo" },
+      null,
+    ]);
+  });
 });
 
 describe("adminProductService.get", () => {
-  it("devolve o produto de qualquer status como ProductDTO", async () => {
-    const findById = vi.fn(async () =>
-      buildProduct({ id, title: "Em breve", status: "UPCOMING" }),
+  it("devolve o produto de qualquer status, com a revisão", async () => {
+    const findWithReview = vi.fn(async () =>
+      buildProduct({
+        id,
+        title: "Em breve",
+        status: "UPCOMING",
+        review: { rating: 4, summary: "Promissor" },
+      }),
     );
-    const service = serviceWith({ findById });
+    const service = serviceWith({ findWithReview });
 
     const product = await service.get(id);
 
-    expect(findById).toHaveBeenCalledWith(id);
+    expect(findWithReview).toHaveBeenCalledWith(id);
     expect(product).toMatchObject({
       id,
       title: "Em breve",
       status: "UPCOMING",
+      review: { rating: 4, summary: "Promissor" },
     });
   });
 
   it("responde 404 PRODUCT_NOT_FOUND quando o produto não existe", async () => {
-    const service = serviceWith({ findById: async () => null });
+    const service = serviceWith({ findWithReview: async () => null });
 
     const error = await service.get(id).catch((e: unknown) => e);
 
@@ -71,11 +93,100 @@ describe("adminProductService.get", () => {
   });
 
   it("recusa id que não é UUID antes de chegar ao banco", async () => {
-    const findById = vi.fn();
-    const service = serviceWith({ findById });
+    const findWithReview = vi.fn();
+    const service = serviceWith({ findWithReview });
 
     await expect(service.get("abc")).rejects.toBeInstanceOf(ValidationError);
-    expect(findById).not.toHaveBeenCalled();
+    expect(findWithReview).not.toHaveBeenCalled();
+  });
+});
+
+describe("adminProductService.saveReview", () => {
+  it("grava a nota e o resumo limpo, e devolve a revisão", async () => {
+    const upsertReview = vi.fn(
+      async (
+        _productId: string,
+        review: { rating: number; summary: string | null },
+      ) => review,
+    );
+    const service = serviceWith({ upsertReview });
+
+    const review = await service.saveReview(id, {
+      rating: 5,
+      summary: "  Ótimo  ",
+      upvotes: 500,
+    });
+
+    expect(upsertReview).toHaveBeenCalledWith(id, {
+      rating: 5,
+      summary: "Ótimo",
+    });
+    expect(review).toEqual({ rating: 5, summary: "Ótimo" });
+  });
+
+  it("resumo ausente ou vazio vira null", async () => {
+    const upsertReview = vi.fn(
+      async (
+        _productId: string,
+        review: { rating: number; summary: string | null },
+      ) => review,
+    );
+    const service = serviceWith({ upsertReview });
+
+    await service.saveReview(id, { rating: 3 });
+    await service.saveReview(id, { rating: 3, summary: "   " });
+
+    expect(upsertReview.mock.calls.map(([, review]) => review)).toEqual([
+      { rating: 3, summary: null },
+      { rating: 3, summary: null },
+    ]);
+  });
+
+  it.each([0, 6, 4.5, "5", null])(
+    "nota %j dá 400 no campo rating, sem gravar",
+    async (rating) => {
+      const upsertReview = vi.fn();
+      const service = serviceWith({ upsertReview });
+
+      const error = await service
+        .saveReview(id, { rating })
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error).toHaveProperty("details.fields.rating");
+      expect(upsertReview).not.toHaveBeenCalled();
+    },
+  );
+
+  it("resumo acima de 280 caracteres dá 400 no campo summary", async () => {
+    const service = serviceWith({ upsertReview: vi.fn() });
+
+    const error = await service
+      .saveReview(id, { rating: 5, summary: "x".repeat(281) })
+      .catch((e: unknown) => e);
+
+    expect(error).toHaveProperty("details.fields.summary");
+  });
+
+  it("responde 404 PRODUCT_NOT_FOUND quando o produto não existe", async () => {
+    const service = serviceWith({ upsertReview: async () => null });
+
+    const error = await service
+      .saveReview(id, { rating: 5 })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(NotFoundError);
+    expect(error).toHaveProperty("code", "PRODUCT_NOT_FOUND");
+  });
+
+  it("recusa id que não é UUID antes de chegar ao banco", async () => {
+    const upsertReview = vi.fn();
+    const service = serviceWith({ upsertReview });
+
+    await expect(
+      service.saveReview("abc", { rating: 5 }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(upsertReview).not.toHaveBeenCalled();
   });
 });
 

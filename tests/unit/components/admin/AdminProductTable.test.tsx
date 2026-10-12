@@ -3,14 +3,22 @@ import { describe, expect, it } from "vitest";
 
 import { AdminProductTable } from "@/components/admin/AdminProductTable";
 
+import type { AdminProductDTO } from "@/types/api";
+
 import { buildProductDTO } from "../../../helpers/buildProductDTO";
+
+function adminProduct(
+  overrides: Partial<AdminProductDTO> = {},
+): AdminProductDTO {
+  return { ...buildProductDTO(), review: null, ...overrides };
+}
 
 describe("AdminProductTable", () => {
   it("mostra nome, status, votos, visitas, topics e data de cada produto", () => {
     render(
       <AdminProductTable
         products={[
-          buildProductDTO({
+          adminProduct({
             title: "Zwelie",
             status: "UPCOMING",
             upvotes: 0,
@@ -18,7 +26,11 @@ describe("AdminProductTable", () => {
             topics: [],
             createdAt: "2026-10-11T02:30:00.000Z",
           }),
-          buildProductDTO({ id: "2", upvotes: 1240 }),
+          adminProduct({
+            id: "2",
+            upvotes: 1240,
+            review: { rating: 4, summary: null },
+          }),
         ]}
       />,
     );
@@ -31,10 +43,11 @@ describe("AdminProductTable", () => {
 
     expect(within(rows[0]!).getByRole("rowheader").textContent).toBe("Zwelie");
     // Data no fuso de Brasília (02:30 UTC ainda é dia 10).
-    expect(cells(rows[0]!).slice(0, 5)).toEqual([
+    expect(cells(rows[0]!).slice(0, 6)).toEqual([
       "Em breve",
       "0",
       "0",
+      "—",
       "—",
       "10/10/2026",
     ]);
@@ -44,10 +57,13 @@ describe("AdminProductTable", () => {
       "1.240",
       "Tech, SaaS",
     ]);
+    expect(within(rows[1]!).getByRole("img").getAttribute("aria-label")).toBe(
+      "Nota 4 de 5",
+    );
   });
 
   it("liga o botão Editar à página de edição do produto", () => {
-    render(<AdminProductTable products={[buildProductDTO()]} />);
+    render(<AdminProductTable products={[adminProduct()]} />);
 
     expect(
       screen.getByRole("link", { name: "Editar Layer" }).getAttribute("href"),

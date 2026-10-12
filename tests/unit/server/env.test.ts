@@ -10,6 +10,8 @@ const valid = {
   CLERK_SECRET_KEY: "sk_test_fake",
   NEXT_PUBLIC_CLERK_SIGN_IN_URL: "/sign-in",
   NEXT_PUBLIC_CLERK_SIGN_UP_URL: "/sign-up",
+  CLERK_WEBHOOK_SIGNING_SECRET:
+    "whsec_aHVudC10ZXN0LXdlYmhvb2stc2VjcmV0LTMyYnl0ZXM=",
 };
 const databaseUrl = "postgresql://hunt:hunt@localhost:5435/hunt";
 
@@ -63,6 +65,7 @@ describe("parseEnv", () => {
     "CLERK_SECRET_KEY",
     "NEXT_PUBLIC_CLERK_SIGN_IN_URL",
     "NEXT_PUBLIC_CLERK_SIGN_UP_URL",
+    "CLERK_WEBHOOK_SIGNING_SECRET",
   ])("falha quando %s está ausente", (name) => {
     const source: Record<string, string | undefined> = { ...valid };
     delete source[name];

@@ -21,20 +21,27 @@ import {
   PRODUCT_TITLE_MAX,
   productFormSchema,
 } from "@/lib/validation/product";
-import type { ProductDTO } from "@/types/api";
+import type { ProductDTO, ProductStatus } from "@/types/api";
 
 type Values = {
   title: string;
   description: string;
   url: string;
   logoUrl: string;
+  status: ProductStatus;
 };
 
 type FieldName = keyof Values;
 type FieldErrors = Partial<Record<FieldName, string>>;
 
 /** Ordem dos campos na tela: o foco vai para o primeiro com erro. */
-const FIELD_ORDER: FieldName[] = ["title", "description", "url", "logoUrl"];
+const FIELD_ORDER: FieldName[] = [
+  "title",
+  "description",
+  "url",
+  "logoUrl",
+  "status",
+];
 
 /** Espera antes de carregar a prévia do logo enquanto a URL é digitada. */
 const PREVIEW_DELAY_MS = 400;
@@ -64,13 +71,18 @@ export function ProductForm({ product }: { product?: ProductDTO }) {
     description: product?.description ?? "",
     url: product?.url ?? "",
     logoUrl: product?.logoUrl ?? "",
+    status: product?.status ?? "LAUNCHED",
   });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   function change(name: FieldName) {
-    return (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    return (
+      event: ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
       const { value } = event.target;
       setValues((current) => ({ ...current, [name]: value }));
       setErrors((current) => ({ ...current, [name]: undefined }));
@@ -94,6 +106,7 @@ export function ProductForm({ product }: { product?: ProductDTO }) {
       description: values.description,
       url: values.url.trim(),
       logoUrl: values.logoUrl.trim() || null,
+      status: values.status,
     });
     if (!parsed.success) {
       return showErrors(firstErrors(z.flattenError(parsed.error).fieldErrors));
@@ -218,6 +231,27 @@ export function ProductForm({ product }: { product?: ProductDTO }) {
         </Field>
         <LogoPreview url={values.logoUrl} />
       </div>
+
+      <Field
+        label="Status"
+        hint="Em breve: fica fora da lista principal, aparece na lateral e não recebe votos."
+        error={errors.status}
+      >
+        {(describedBy, id) => (
+          <select
+            id={id}
+            name="status"
+            value={values.status}
+            onChange={change("status")}
+            aria-invalid={errors.status ? true : undefined}
+            aria-describedby={describedBy}
+            className={cn(inputClasses, "h-[42px] sm:max-w-60")}
+          >
+            <option value="LAUNCHED">Lançado</option>
+            <option value="UPCOMING">Em breve</option>
+          </select>
+        )}
+      </Field>
 
       {formError && (
         <p

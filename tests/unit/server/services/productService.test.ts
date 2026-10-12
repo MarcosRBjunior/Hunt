@@ -131,6 +131,35 @@ describe("productService.listReviewed", () => {
   });
 });
 
+describe("productService.listReviewed (limit)", () => {
+  it.each([
+    ["5", 5],
+    ["1", 1],
+    ["10", 10],
+    [null, 3],
+    [undefined, 3],
+  ])("limit %j pede %d", async (limit, expected) => {
+    const listReviewed = vi.fn(async () => []);
+    const service = serviceWith({ listReviewed });
+
+    await service.listReviewed(limit);
+
+    expect(listReviewed).toHaveBeenCalledWith(expected);
+  });
+
+  it.each(["0", "11", "-1", "2.5", "abc", ""])(
+    "limit inválido %j volta para 3, sem erro",
+    async (limit) => {
+      const listReviewed = vi.fn(async () => []);
+      const service = serviceWith({ listReviewed });
+
+      await service.listReviewed(limit);
+
+      expect(listReviewed).toHaveBeenCalledWith(3);
+    },
+  );
+});
+
 describe("productService.listUpcoming", () => {
   it("converte os produtos em breve para ProductDTO", async () => {
     const service = serviceWith({

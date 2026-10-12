@@ -30,12 +30,24 @@ export type ReviewedProductDTO = ProductDTO & {
   review: ReviewDTO;
 };
 
+/** Produto na área admin: com a revisão, se houver. */
+export type AdminProductDTO = ProductDTO & {
+  review: ReviewDTO | null;
+};
+
 /** Resposta de `POST` e `DELETE /products/{id}/vote`. */
 export type VoteDTO = {
   productId: string;
   /** Total depois do voto (ou da remoção). */
   upvotes: number;
   viewerHasVoted: boolean;
+};
+
+/** Resposta de `GET /api/health`. */
+export type HealthDTO = {
+  status: "ok";
+  /** `skipped` com `PRODUCT_SOURCE=mock` (o app não usa banco). */
+  database: "ok" | "skipped";
 };
 
 export type ApiSuccess<T> = {

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { idSchema } from "@/lib/validation/common";
 import type { ProductDTO, ReviewedProductDTO } from "@/types/api";
 
@@ -21,6 +23,17 @@ type Viewer = { externalId: string };
 
 /** Quantos revisados a lateral mostra (CLAUDE.md › Regras de negócio, 9). */
 const REVIEWED_LIMIT = 3;
+
+/**
+ * `?limit=` de `/products/reviewed`: de 1 a 10. A API não prevê erro nesse
+ * endpoint, então valor ausente ou inválido vira o padrão.
+ */
+const reviewedLimitSchema = z.coerce
+  .number()
+  .int()
+  .min(1)
+  .max(10)
+  .catch(REVIEWED_LIMIT);
 
 export function toProductDTO(
   product: Product,
@@ -73,8 +86,11 @@ export function createProductService({
       );
     },
 
-    async listReviewed(): Promise<ReviewedProductDTO[]> {
-      const products = await productRepository.listReviewed(REVIEWED_LIMIT);
+    /** "Produtos revisados por nós": por nota decrescente, até `limit` (padrão 3). */
+    async listReviewed(limit?: unknown): Promise<ReviewedProductDTO[]> {
+      const products = await productRepository.listReviewed(
+        reviewedLimitSchema.parse(limit ?? REVIEWED_LIMIT),
+      );
       return products.map(toReviewedProductDTO);
     },
 

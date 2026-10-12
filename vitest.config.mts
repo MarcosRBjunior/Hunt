@@ -16,6 +16,9 @@ export default defineConfig({
       CLERK_SECRET_KEY: "sk_test_fake",
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: "/sign-in",
       NEXT_PUBLIC_CLERK_SIGN_UP_URL: "/sign-up",
+      // Segredo fictício: os testes do webhook assinam os eventos com ele.
+      CLERK_WEBHOOK_SIGNING_SECRET:
+        "whsec_aHVudC10ZXN0LXdlYmhvb2stc2VjcmV0LTMyYnl0ZXM=",
     },
     // Testes .ts rodam em Node; testes .tsx (componentes) rodam no jsdom.
     // Os de integração precisam do Postgres e rodam à parte
