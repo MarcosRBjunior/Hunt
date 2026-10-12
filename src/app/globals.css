@@ -56,6 +56,11 @@
   --color-live: #f26b55;
   --color-star: #f5ad32;
 
+  /* Erro e ação destrutiva: AA como texto e sob texto branco */
+  --color-danger: #c0392b;
+  --color-danger-hover: #a93226;
+  --color-danger-subtle: #fdf0ee;
+
   /* Acentos de produto */
   --color-accent-green: #188d78;
   --color-accent-green-bg: #e9faf5;

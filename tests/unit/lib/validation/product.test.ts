@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { idSchema } from "@/lib/validation/common";
 import {
   createProductSchema,
+  productFormSchema,
   updateProductSchema,
 } from "@/lib/validation/product";
 
@@ -190,5 +191,27 @@ describe("idSchema", () => {
     "'; DROP TABLE products; --",
   ])("recusa id que não é UUID: %s", (id) => {
     expect(idSchema.safeParse(id).success).toBe(false);
+  });
+});
+
+describe("productFormSchema", () => {
+  it("valida só os campos do formulário e descarta o resto", () => {
+    expect(
+      productFormSchema.parse({
+        ...validBody,
+        logoUrl: null,
+        status: "UPCOMING",
+        upvotes: 500,
+      }),
+    ).toEqual({ ...validBody, logoUrl: null });
+  });
+
+  it("exige os quatro campos, com logo nulo quando não há", () => {
+    expect(fieldErrors(productFormSchema.safeParse({}))).toEqual([
+      "title",
+      "description",
+      "url",
+      "logoUrl",
+    ]);
   });
 });

@@ -1,4 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+
+import { signInHref } from "@/lib/site";
 
 import { ForbiddenError, UnauthenticatedError } from "./errors";
 import { userService, type UserService } from "./services/userService";
@@ -62,10 +65,23 @@ export function createAuth({ readSession, userService }: Dependencies) {
 
       return viewer;
     },
+
+    /**
+     * Páginas da área admin: sem sessão, vai para o login (e volta para
+     * `returnTo`); sem papel de admin, vai para `/acesso-negado`.
+     */
+    async requireAdminPage(returnTo: string): Promise<Viewer> {
+      const viewer = await getViewer();
+      if (!viewer) redirect(signInHref(returnTo));
+      if (!viewer.isAdmin) redirect("/acesso-negado");
+
+      return viewer;
+    },
   };
 }
 
-export const { getViewer, requireUser, requireAdmin } = createAuth({
-  readSession: () => auth(),
-  userService,
-});
+export const { getViewer, requireUser, requireAdmin, requireAdminPage } =
+  createAuth({
+    readSession: () => auth(),
+    userService,
+  });

@@ -80,6 +80,10 @@ Todos passam de 4.5:1 também sobre `surface-subtle`, `page`, `surface-tag` e o 
 
 `live` `#F26B55` (pulse, anel `rgb(242 107 85 / .12)`) · `star` `#F5AD32` (estrelas).
 
+### Erro e ação destrutiva (Fase 8)
+
+`danger` `#C0392B` (texto de erro, botão "Remover"; 5.4:1 no branco e com texto branco) · `danger-hover` `#A93226` · `danger-subtle` `#FDF0EE` (fundo do aviso de erro do formulário; `danger` sobre ele dá 4.9:1).
+
 ### Acentos de produto
 
 | Acento | `accent-*` (ícone/borda) | `-bg` (externo) | `-inner` (interno) | `-soft` (lateral / em breve) |
@@ -118,7 +122,7 @@ Base de 2px, sem grid rígido. Tokens `--space-*` no `tokens.css` (ex.: `--space
 | `panel-hover`   | `0 12px 28px rgb(33 41 67 / .07)`  | Card revisado em hover  |
 | `primary`       | `0 8px 20px rgb(98 88 232 / .22)`  | Botão primário          |
 | `primary-hover` | `0 10px 24px rgb(98 88 232 / .30)` | Botão primário em hover |
-| `primary-sm`    | `0 7px 16px rgb(98 88 232 / .22)`  | Upvote em hover (Fase 8) |
+| `primary-sm`    | `0 7px 16px rgb(98 88 232 / .22)`  | Upvote em hover e votado |
 | `logo`          | `0 7px 16px rgb(98 88 232 / .25)`  | Logo mark               |
 | `live-ring`     | `0 0 0 5px rgb(242 107 85 / .12)`  | Pulse dot               |
 
@@ -155,7 +159,7 @@ Glifos de texto: `→`, `↓`, `✓`, `★`. O favicon (`src/app/icon.svg`) é a
 | `layout/SiteHeader`                   | link ativo (`aria-current`, barra 22×2 roxa), hover   | Logo · nav 14/600 · Login (secundário) e Registro (primário) |
 | `layout/SiteFooter`                   | —                                                     | Crédito do Projeto 06 · GitHub · LinkedIn                    |
 | `layout/PageShell`                    | —                                                     | Shell + "Pular para o conteúdo" + header + main + footer     |
-| `ui/Button`, `ui/ButtonLink`          | `primary`, `secondary`; hover (lift)                  | 42px altura, min 88px, raio 12, 13/700                       |
+| `ui/Button`, `ui/ButtonLink`          | `primary`, `secondary`, `danger`; hover (lift); desabilitado (60%) | 42px altura, min 88px, raio 12, 13/700          |
 | `ui/Eyebrow`                          | default, "em breve" (`primary-hover`)                 | 11/800, tracking 1.5px, caixa alta                           |
 | `ui/SectionHeading`                   | `h1` (display) ou `h2` (title)                        | Eyebrow + título + ação opcional ("Ver todos →")             |
 | `ui/EmptyState`, `ui/ErrorState`      | erro com "Tentar novamente"                           | Painel tracejado (vazio) ou sólido com `role="alert"` (erro) |
@@ -164,7 +168,12 @@ Glifos de texto: `→`, `↓`, `✓`, `★`. O favicon (`src/app/icon.svg`) é a
 | `topics/TrendingTopicsBar`            | só visual no nível 1                                  | Pulse dot + título + chips (pill 12/600) + "Atualizado agora" |
 | `products/ProductCard`                | default, hover (branco, borda, sombra, lift)          | Grid: rank 28 · ícone 68 · texto · upvote 58                 |
 | `products/ProductLogo`                | `card`, `review`, `coming`; logo ou arte por `id`     | 58px com área interna (card), 50px (+7°), 38px               |
-| `products/UpvoteButton`               | só exibe no nível 1                                   | 54×62, raio 13, seta 19px + contagem 11/800                  |
+| `products/UpvoteButton`               | default; hover (`primary-subtle`, borda `primary-border`, texto `primary`, lift, `primary-sm`); votado (`primary` cheio, texto branco); aviso de falha (balão `ink` abaixo, some em 4 s) | 54×62, raio 13, seta 19px + contagem 11/800 |
+| `products/ProductLink`, `VisitCount`  | o clique soma 1 na contagem na hora                   | Link do título cobrindo o card · "N visitas" 11px            |
+| `layout/AdminLink`                    | só para admin                                         | Botão secundário "Admin" ao lado do avatar                   |
+| `admin/AdminProductTable`             | lista ou estado vazio; rola na horizontal no celular  | Tabela com logo 38px, status (chip), votos, visitas, topics, data, Editar/Remover |
+| `admin/ProductForm`                   | erro por campo (`danger`), contador acima do limite, prévia do logo | Campos 42px, raio 12; contador `n/máx`; prévia 58px |
+| `admin/DeleteProductButton`           | confirmação em `<dialog>`, erro dentro dele           | Modal 440px, raio 18, fundo `ink` 40%                        |
 | `products/ProductList`                | lista ou estado vazio                                 | `ol` de cards, gap 10                                        |
 | `sidebar/ReviewedProductCard`         | hover (desliza à esquerda)                            | Título, resumo, rating à esquerda; ícone à direita           |
 | `sidebar/Rating`                      | 1 a 5                                                 | ★ `star` + vazias em `line` + "5.0" + "/ 5"                  |
@@ -190,6 +199,7 @@ O Make original tinha alguns problemas que o próprio levantamento apontou. Este
 | Link "Quero ser avisado →" no card "em breve"                         | Removido                                                                    | Notificação está fora do escopo                          |
 | Footer "Descubra algo extraordinário. · © 2025 nova"                  | Crédito do Projeto 06 + GitHub + LinkedIn                                   | Regra do CLAUDE.md                                       |
 | Chips e upvote com hover de ação                                      | Sem hover no nível 1 (filtro na Fase 10, voto na Fase 8)                    | Não sugerir uma ação que ainda não existe                |
+| Upvote em hover: roxo cheio (Fase 8)                                  | Hover em roxo claro; roxo cheio só quando votado                            | Hover e votado iguais escondiam se o voto foi removido   |
 | Sem `prefers-reduced-motion`                                          | Transições e animações desligadas quando o usuário pede                     | Acessibilidade                                           |
 
 **Ainda em aberto:** não há dark mode; o tema é só claro.

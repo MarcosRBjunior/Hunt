@@ -110,3 +110,38 @@ describe("requireAdmin", () => {
     });
   });
 });
+
+describe("requireAdminPage", () => {
+  /** `redirect()` do Next lança um erro com o destino no `digest`. */
+  async function redirectTarget(promise: Promise<unknown>) {
+    const error = await promise.catch((e: unknown) => e);
+    const digest = (error as { digest?: string }).digest ?? "";
+    expect(digest.startsWith("NEXT_REDIRECT;")).toBe(true);
+    return digest.split(";")[2];
+  }
+
+  it("manda o visitante para o login, voltando para a página pedida", async () => {
+    const target = await redirectTarget(
+      authWith(null).requireAdminPage("/admin/produtos/novo"),
+    );
+
+    expect(target).toBe("/sign-in?redirect_url=%2Fadmin%2Fprodutos%2Fnovo");
+  });
+
+  it("manda o usuário comum para /acesso-negado, sem gravar nada", async () => {
+    const auth = authWith("user_1");
+
+    const target = await redirectTarget(
+      auth.requireAdminPage("/admin/produtos"),
+    );
+
+    expect(target).toBe("/acesso-negado");
+    expect(auth.ensureUser).not.toHaveBeenCalled();
+  });
+
+  it("libera o admin", async () => {
+    expect(
+      await authWith("user_1", admin).requireAdminPage("/admin/produtos"),
+    ).toEqual({ externalId: "user_1", isAdmin: true });
+  });
+});

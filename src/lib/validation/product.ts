@@ -38,8 +38,20 @@ export const createProductSchema = z.object({
   topicSlugs: productFields.topicSlugs.default([]),
 });
 
+/**
+ * Campos do formulário do admin. Status e topics entram no formulário nas
+ * Fases 9 e 10; até lá, o PATCH não os envia e eles ficam como estão.
+ */
+export const productFormSchema = z.object({
+  title: productFields.title,
+  description: productFields.description,
+  url: productFields.url,
+  logoUrl: productFields.logoUrl,
+});
+
 /** PATCH: tudo opcional; `topicSlugs` substitui a lista inteira. */
 export const updateProductSchema = z.object(productFields).partial();
 
 export type CreateProductInput = z.output<typeof createProductSchema>;
 export type UpdateProductInput = z.output<typeof updateProductSchema>;
+export type ProductFormInput = z.output<typeof productFormSchema>;

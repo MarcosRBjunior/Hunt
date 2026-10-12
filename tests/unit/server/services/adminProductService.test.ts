@@ -44,6 +44,41 @@ describe("adminProductService.list", () => {
   });
 });
 
+describe("adminProductService.get", () => {
+  it("devolve o produto de qualquer status como ProductDTO", async () => {
+    const findById = vi.fn(async () =>
+      buildProduct({ id, title: "Em breve", status: "UPCOMING" }),
+    );
+    const service = serviceWith({ findById });
+
+    const product = await service.get(id);
+
+    expect(findById).toHaveBeenCalledWith(id);
+    expect(product).toMatchObject({
+      id,
+      title: "Em breve",
+      status: "UPCOMING",
+    });
+  });
+
+  it("responde 404 PRODUCT_NOT_FOUND quando o produto não existe", async () => {
+    const service = serviceWith({ findById: async () => null });
+
+    const error = await service.get(id).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(NotFoundError);
+    expect(error).toHaveProperty("code", "PRODUCT_NOT_FOUND");
+  });
+
+  it("recusa id que não é UUID antes de chegar ao banco", async () => {
+    const findById = vi.fn();
+    const service = serviceWith({ findById });
+
+    await expect(service.get("abc")).rejects.toBeInstanceOf(ValidationError);
+    expect(findById).not.toHaveBeenCalled();
+  });
+});
+
 describe("adminProductService.create", () => {
   it("cria com os campos validados e os padrões", async () => {
     const create = vi.fn(async (product: NewProduct) =>
