@@ -19,6 +19,11 @@ export function isTopicSlug(slug: string): slug is TopicSlug {
   return (TOPIC_SLUGS as readonly string[]).includes(slug);
 }
 
+/** Topic do seed pelo slug, ou `undefined`. */
+export function findTopic(slug: string) {
+  return SEED_TOPICS.find((topic) => topic.slug === slug);
+}
+
 /** Ordem de exibição dos topics (barra, categorias e tags dos cards): alfabética pelo nome. */
 export function sortTopicsByName<T extends { name: string }>(
   topics: readonly T[],

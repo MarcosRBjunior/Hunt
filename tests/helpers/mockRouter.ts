@@ -12,3 +12,6 @@ export const mockRouter = {
   forward: vi.fn(),
   prefetch: vi.fn(),
 };
+
+/** Query string da URL nos testes de componente (`useSearchParams`). */
+export const mockSearchParams = { current: new URLSearchParams() };

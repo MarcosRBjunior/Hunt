@@ -9,7 +9,7 @@ import { TrendingTopicsBar } from "@/components/topics/TrendingTopicsBar";
 import { SectionErrorBoundary } from "@/components/ui/SectionErrorBoundary";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
-export default function Home() {
+export default function Home({ searchParams }: PageProps<"/">) {
   return (
     <PageShell>
       <TrendingTopicsBar />
@@ -48,7 +48,7 @@ export default function Home() {
           />
           <SectionErrorBoundary title="Não foi possível carregar os produtos">
             <Suspense fallback={<ProductListSkeleton />}>
-              <LaunchedProducts />
+              <LaunchedProducts searchParams={searchParams} />
             </Suspense>
           </SectionErrorBoundary>
         </section>

@@ -14,6 +14,7 @@ import { z } from "zod";
 
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { ApiClientError, apiFetch } from "@/lib/apiClient";
+import { isTopicSlug, TOPICS_BY_NAME, type TopicSlug } from "@/lib/topics";
 import { cn } from "@/lib/utils";
 import { httpUrlSchema } from "@/lib/validation/common";
 import {
@@ -32,15 +33,17 @@ type Values = {
 };
 
 type FieldName = keyof Values;
-type FieldErrors = Partial<Record<FieldName, string>>;
+type ErrorName = FieldName | "topicSlugs";
+type FieldErrors = Partial<Record<ErrorName, string>>;
 
 /** Ordem dos campos na tela: o foco vai para o primeiro com erro. */
-const FIELD_ORDER: FieldName[] = [
+const FIELD_ORDER: ErrorName[] = [
   "title",
   "description",
   "url",
   "logoUrl",
   "status",
+  "topicSlugs",
 ];
 
 /** Espera antes de carregar a prévia do logo enquanto a URL é digitada. */
@@ -73,6 +76,9 @@ export function ProductForm({ product }: { product?: ProductDTO }) {
     logoUrl: product?.logoUrl ?? "",
     status: product?.status ?? "LAUNCHED",
   });
+  const [topicSlugs, setTopicSlugs] = useState<TopicSlug[]>(
+    product?.topics.map((topic) => topic.slug).filter(isTopicSlug) ?? [],
+  );
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -89,11 +95,22 @@ export function ProductForm({ product }: { product?: ProductDTO }) {
     };
   }
 
+  function toggleTopic(slug: TopicSlug) {
+    setTopicSlugs((current) =>
+      current.includes(slug)
+        ? current.filter((selected) => selected !== slug)
+        : [...current, slug],
+    );
+    setErrors((current) => ({ ...current, topicSlugs: undefined }));
+  }
+
   function showErrors(fieldErrors: FieldErrors) {
     setErrors(fieldErrors);
     const first = FIELD_ORDER.find((name) => fieldErrors[name]);
     const field = first && formRef.current?.elements.namedItem(first);
-    if (field instanceof HTMLElement) field.focus();
+    // Os topics são várias caixas com o mesmo nome: o foco vai para a primeira.
+    const target = field instanceof RadioNodeList ? field[0] : field;
+    if (target instanceof HTMLElement) target.focus();
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -107,6 +124,10 @@ export function ProductForm({ product }: { product?: ProductDTO }) {
       url: values.url.trim(),
       logoUrl: values.logoUrl.trim() || null,
       status: values.status,
+      // Na ordem da tela, para o pedido não depender da ordem dos cliques.
+      topicSlugs: TOPICS_BY_NAME.map((topic) => topic.slug).filter((slug) =>
+        topicSlugs.includes(slug),
+      ),
     });
     if (!parsed.success) {
       return showErrors(firstErrors(z.flattenError(parsed.error).fieldErrors));
@@ -253,6 +274,12 @@ export function ProductForm({ product }: { product?: ProductDTO }) {
         )}
       </Field>
 
+      <TopicsField
+        selected={topicSlugs}
+        onToggle={toggleTopic}
+        error={errors.topicSlugs}
+      />
+
       {formError && (
         <p
           role="alert"
@@ -330,6 +357,54 @@ function Field({ label, hint, error, counter, children }: FieldProps) {
         </p>
       )}
     </div>
+  );
+}
+
+type TopicsFieldProps = {
+  selected: readonly TopicSlug[];
+  onToggle: (slug: TopicSlug) => void;
+  error?: string;
+};
+
+/** Topics do produto: nenhum, um ou vários dos 5 do seed. */
+function TopicsField({ selected, onToggle, error }: TopicsFieldProps) {
+  const id = useId();
+
+  return (
+    <fieldset aria-describedby={cn(`${id}-hint`, error && `${id}-error`)}>
+      <legend className="text-button font-bold text-ink">
+        Topics (opcional)
+      </legend>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {TOPICS_BY_NAME.map((topic) => (
+          <label
+            key={topic.slug}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-pill border border-line bg-surface px-3.5 py-2 text-body font-semibold text-ink-muted transition-colors duration-200 select-none hover:border-line-strong has-checked:border-primary has-checked:bg-primary-subtle has-checked:text-primary"
+          >
+            <input
+              type="checkbox"
+              name="topicSlugs"
+              value={topic.slug}
+              checked={selected.includes(topic.slug)}
+              onChange={() => onToggle(topic.slug)}
+              className="size-4 accent-primary"
+            />
+            {topic.name}
+          </label>
+        ))}
+      </div>
+      <p id={`${id}-hint`} className="mt-1.5 text-body text-ink-subtle">
+        Filtram a home pelos trending topics. Um produto pode ter vários.
+      </p>
+      {error && (
+        <p
+          id={`${id}-error`}
+          className="mt-1.5 text-body font-bold text-danger"
+        >
+          {error}
+        </p>
+      )}
+    </fieldset>
   );
 }
 

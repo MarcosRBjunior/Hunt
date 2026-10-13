@@ -1,12 +1,23 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
+import { Suspense } from "react";
 
 import { PageShell } from "@/components/layout/PageShell";
+import { CategoryList } from "@/components/topics/CategoryList";
+import { CategoryListSkeleton } from "@/components/topics/CategoryListSkeleton";
 import { Eyebrow } from "@/components/ui/Eyebrow";
-import { TOPICS_BY_NAME } from "@/lib/topics";
+import { SectionErrorBoundary } from "@/components/ui/SectionErrorBoundary";
+import { topicService } from "@/server/services/topicService";
 
 export const metadata: Metadata = {
   title: "Categorias",
 };
+
+async function CategoriesData() {
+  // A contagem muda quando o admin salva um produto: sem cache.
+  await connection();
+  return <CategoryList topics={await topicService.listWithProductCount()} />;
+}
 
 export default function CategoriasPage() {
   return (
@@ -16,27 +27,15 @@ export default function CategoriasPage() {
         <h1 className="text-display font-normal text-ink">Categorias</h1>
         <p className="mt-3 max-w-xl text-nav text-ink-subtle">
           Os assuntos que organizam os produtos da vitrine. Um produto pode
-          estar em mais de uma categoria.
+          estar em mais de uma categoria; clique em uma para ver os produtos
+          lançados dela.
         </p>
 
-        <ul
-          aria-label="Categorias"
-          className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {TOPICS_BY_NAME.map((topic) => (
-            <li
-              key={topic.slug}
-              className="flex items-center justify-between gap-3 rounded-lg border border-line-soft bg-surface-subtle p-[18px]"
-            >
-              <span className="text-card-title font-extrabold tracking-[-0.3px] text-ink">
-                {topic.name}
-              </span>
-              <span className="rounded-pill border border-line bg-surface px-3 py-1 text-caption font-bold text-ink-muted">
-                #{topic.slug}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <SectionErrorBoundary title="Não foi possível carregar as categorias">
+          <Suspense fallback={<CategoryListSkeleton />}>
+            <CategoriesData />
+          </Suspense>
+        </SectionErrorBoundary>
       </section>
     </PageShell>
   );
