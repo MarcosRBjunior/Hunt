@@ -22,7 +22,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "coverage/**",
+    // Saídas do Playwright.
+    "playwright-report/**",
+    "test-results/**",
+    "blob-report/**",
     "next-env.d.ts",
+    // Prisma Client gerado por `prisma generate`.
+    "src/generated/**",
     // Referência do Figma Make (app Vite separado), fora do projeto.
     "docs/**",
   ]),

@@ -1,24 +1,25 @@
 import { z } from "zod";
 
-import { TOPIC_SLUGS } from "@/lib/topics";
+import { sortTopicsByName, TOPIC_SLUGS } from "@/lib/topics";
+import { httpUrlSchema } from "@/lib/validation/common";
 import rawProducts from "@/mocks/products.json";
 
 import type {
+  AdminProduct,
   EditorialReview,
   Product,
   ProductRepository,
   ReviewedProduct,
 } from "./productRepository";
-
-const httpUrl = z.url({ protocol: /^https?$/, hostname: z.regexes.domain });
+import { ReadOnlySourceError } from "./readOnlySource";
 
 // Valida o JSON com as mesmas restrições do banco, para o mock não divergir dele.
 const mockProductSchema = z.object({
   id: z.uuid(),
   title: z.string().min(1).max(80),
   description: z.string().min(1).max(500),
-  url: httpUrl,
-  logoUrl: httpUrl.nullable(),
+  url: httpUrlSchema,
+  logoUrl: httpUrlSchema.nullable(),
   upvotes: z.int().nonnegative(),
   visits: z.int().nonnegative(),
   status: z.enum(["LAUNCHED", "UPCOMING"]),
@@ -55,7 +56,11 @@ function newestFirst(a: Product, b: Product): number {
 }
 
 function toProduct({ review, ...product }: MockProductRecord): Product {
-  return product;
+  return { ...product, topics: sortTopicsByName(product.topics) };
+}
+
+function toAdminProduct(record: MockProductRecord): AdminProduct {
+  return { ...toProduct(record), review: record.review };
 }
 
 function hasReview(
@@ -86,7 +91,8 @@ export class MockProductRepository implements ProductRepository {
       .toSorted(
         (a, b) => b.review.rating - a.review.rating || newestFirst(a, b),
       )
-      .slice(0, limit);
+      .slice(0, limit)
+      .map((record) => ({ ...toProduct(record), review: record.review }));
   }
 
   async listUpcoming(): Promise<Product[]> {
@@ -94,5 +100,39 @@ export class MockProductRepository implements ProductRepository {
       .filter((record) => record.status === "UPCOMING")
       .map(toProduct)
       .toSorted(newestFirst);
+  }
+
+  async listAll(): Promise<AdminProduct[]> {
+    return this.records.map(toAdminProduct).toSorted(newestFirst);
+  }
+
+  async findById(id: string): Promise<Product | null> {
+    const record = this.records.find((candidate) => candidate.id === id);
+    return record ? toProduct(record) : null;
+  }
+
+  async findWithReview(id: string): Promise<AdminProduct | null> {
+    const record = this.records.find((candidate) => candidate.id === id);
+    return record ? toAdminProduct(record) : null;
+  }
+
+  async create(): Promise<Product> {
+    throw new ReadOnlySourceError();
+  }
+
+  async update(): Promise<Product | null> {
+    throw new ReadOnlySourceError();
+  }
+
+  async delete(): Promise<boolean> {
+    throw new ReadOnlySourceError();
+  }
+
+  async incrementVisits(): Promise<boolean> {
+    throw new ReadOnlySourceError();
+  }
+
+  async upsertReview(): Promise<EditorialReview | null> {
+    throw new ReadOnlySourceError();
   }
 }

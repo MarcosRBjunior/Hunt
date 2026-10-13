@@ -1,0 +1,51 @@
+name: Migrations de produção
+
+# As migrations de produção rodam aqui, no merge na main, e nunca no build da
+# Vercel (que também roda nos previews). Também dá para rodar à mão, na aba
+# Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nunca duas ao mesmo tempo, e uma que já começou não é cancelada.
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: prisma migrate deploy (produção)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # O segredo PRODUCTION_DATABASE_URL fica no environment "production".
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # A conexão com o Railway às vezes trava antes de começar: cada tentativa
+      # tem um limite de tempo, e são até 3. Aplicar de novo é seguro (o
+      # Prisma pula as migrations que já foram aplicadas).
+      - name: Aplicar migrations
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          for attempt in 1 2 3; do
+            if timeout 180 npx prisma migrate deploy; then
+              exit 0
+            fi
+            echo "::warning::Tentativa $attempt falhou."
+            sleep 15
+          done
+          exit 1

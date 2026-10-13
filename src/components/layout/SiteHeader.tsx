@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
-import { ButtonLink } from "@/components/ui/Button";
 import { NAV_ITEMS, type NavKey } from "@/lib/site";
 
+import { AuthButtons } from "./AuthButtons";
+import { GuestButtons } from "./GuestButtons";
 import { Logo } from "./Logo";
 
 export function SiteHeader({ active }: { active?: NavKey }) {
@@ -29,17 +31,10 @@ export function SiteHeader({ active }: { active?: NavKey }) {
       </nav>
 
       <div className="flex justify-end gap-2 [grid-area:actions]">
-        <ButtonLink
-          href="/sign-in"
-          prefetch={false}
-          variant="secondary"
-          className="max-sm:hidden"
-        >
-          Login
-        </ButtonLink>
-        <ButtonLink href="/sign-up" prefetch={false} className="max-sm:min-w-0">
-          Registro <span aria-hidden="true">→</span>
-        </ButtonLink>
+        {/* A casca estática já sai com Login/Registro; quem está logado recebe o menu por streaming. */}
+        <Suspense fallback={<GuestButtons />}>
+          <AuthButtons />
+        </Suspense>
       </div>
     </header>
   );

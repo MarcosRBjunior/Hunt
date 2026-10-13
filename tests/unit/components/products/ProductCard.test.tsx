@@ -41,6 +41,22 @@ describe("ProductCard", () => {
     ).toBeTruthy();
   });
 
+  it("mostra o botão ativo quando quem está logado já votou", () => {
+    render(
+      <ProductCard
+        product={buildProductDTO({ viewerHasVoted: true })}
+        rank={1}
+        signedIn
+      />,
+    );
+
+    expect(
+      screen
+        .getByRole("button", { name: "Votar em Layer (202 votos)" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+  });
+
   it("usa o logo quando o produto tem logoUrl", () => {
     const { container } = render(
       <ProductCard

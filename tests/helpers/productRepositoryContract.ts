@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ProductRepository } from "@/server/repositories/productRepository";
-import {
-  buildProduct,
-  type ProductFixture,
-} from "../../../helpers/buildProduct";
+import { buildProduct, type ProductFixture } from "./buildProduct";
 
 /**
  * Contrato que toda implementação de ProductRepository precisa cumprir.
@@ -60,6 +57,39 @@ export function describeProductRepositoryContract(
       expect(products).toHaveLength(60);
     });
 
+    it("devolve as tags de cada produto em ordem alfabética pelo nome", async () => {
+      const repository = await setup([
+        buildProduct({
+          status: "LAUNCHED",
+          review: { rating: 5, summary: null },
+          topics: [
+            { slug: "tech", name: "Tech" },
+            { slug: "saas", name: "SaaS" },
+            { slug: "ia", name: "Inteligência artificial" },
+          ],
+        }),
+        buildProduct({
+          status: "UPCOMING",
+          topics: [
+            { slug: "saas", name: "SaaS" },
+            { slug: "produtividade", name: "Produtividade" },
+          ],
+        }),
+      ]);
+
+      const [launched] = await repository.listLaunched();
+      const [reviewed] = await repository.listReviewed(3);
+      const [upcoming] = await repository.listUpcoming();
+
+      const expected = ["ia", "saas", "tech"];
+      expect(launched?.topics.map((topic) => topic.slug)).toEqual(expected);
+      expect(reviewed?.topics.map((topic) => topic.slug)).toEqual(expected);
+      expect(upcoming?.topics.map((topic) => topic.slug)).toEqual([
+        "produtividade",
+        "saas",
+      ]);
+    });
+
     it("deixa produtos UPCOMING fora da lista principal", async () => {
       const repository = await setup([
         buildProduct({ title: "Lançado", status: "LAUNCHED" }),
@@ -112,6 +142,85 @@ export function describeProductRepositoryContract(
       expect(reviewed.map((product) => product.title)).toEqual([
         "Recente",
         "Antigo",
+      ]);
+    });
+
+    it("findById: devolve o produto (de qualquer status) com as tags em ordem", async () => {
+      const upcoming = buildProduct({
+        title: "Em breve",
+        status: "UPCOMING",
+        topics: [
+          { slug: "tech", name: "Tech" },
+          { slug: "saas", name: "SaaS" },
+        ],
+      });
+      const repository = await setup([buildProduct(), upcoming]);
+
+      const found = await repository.findById(upcoming.id);
+
+      expect(found).toMatchObject({ id: upcoming.id, title: "Em breve" });
+      expect(found?.topics.map((topic) => topic.slug)).toEqual([
+        "saas",
+        "tech",
+      ]);
+      expect(found).not.toHaveProperty("review");
+    });
+
+    it("findWithReview: devolve o produto com a revisão, ou review null", async () => {
+      const reviewed = buildProduct({
+        title: "Revisado",
+        review: { rating: 4, summary: "Bom" },
+      });
+      const plain = buildProduct({ title: "Sem revisão" });
+      const repository = await setup([reviewed, plain]);
+
+      expect(await repository.findWithReview(reviewed.id)).toMatchObject({
+        title: "Revisado",
+        review: { rating: 4, summary: "Bom" },
+      });
+      expect(await repository.findWithReview(plain.id)).toMatchObject({
+        title: "Sem revisão",
+        review: null,
+      });
+      expect(
+        await repository.findWithReview("00000000-0000-4000-8000-000000000000"),
+      ).toBeNull();
+    });
+
+    it("findById: devolve null para id inexistente", async () => {
+      const repository = await setup([buildProduct()]);
+
+      expect(
+        await repository.findById("00000000-0000-4000-8000-000000000000"),
+      ).toBeNull();
+    });
+
+    it("listAll: todos os status, do mais recente para o mais antigo", async () => {
+      const repository = await setup([
+        buildProduct({
+          title: "Antigo e mais votado",
+          upvotes: 500,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        }),
+        buildProduct({
+          title: "Em breve",
+          status: "UPCOMING",
+          createdAt: new Date("2026-03-01T00:00:00.000Z"),
+        }),
+        buildProduct({
+          title: "Recente",
+          createdAt: new Date("2026-02-01T00:00:00.000Z"),
+        }),
+      ]);
+
+      const products = await repository.listAll();
+
+      expect(products.every((product) => product.review === null)).toBe(true);
+
+      expect(products.map((product) => product.title)).toEqual([
+        "Em breve",
+        "Recente",
+        "Antigo e mais votado",
       ]);
     });
 

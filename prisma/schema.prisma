@@ -1,0 +1,100 @@
+// Modelo de dados (CLAUDE.md › Modelo de dados). A URL do banco fica em
+// prisma.config.ts. Os CHECKs não cabem no schema do Prisma e estão no SQL das
+// migrations.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProductStatus {
+  LAUNCHED
+  UPCOMING
+}
+
+model User {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Id do usuário no Clerk. Nome, e-mail e avatar não são guardados.
+  externalId String   @unique @map("external_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  votes Vote[]
+
+  @@map("users")
+}
+
+model Product {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String        @db.VarChar(80)
+  description String        @db.VarChar(500)
+  url         String
+  logoUrl     String?       @map("logo_url")
+  upvotes     Int           @default(0)
+  visits      Int           @default(0)
+  status      ProductStatus @default(LAUNCHED)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  votes  Vote[]
+  topics ProductTopic[]
+  review EditorialReview?
+
+  @@index([status, upvotes(sort: Desc), createdAt(sort: Desc)])
+  @@map("products")
+}
+
+model Vote {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@map("votes")
+}
+
+model Topic {
+  id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug String @unique @db.VarChar(40)
+  name String @db.VarChar(60)
+
+  products ProductTopic[]
+
+  @@map("topics")
+}
+
+model ProductTopic {
+  productId String @map("product_id") @db.Uuid
+  topicId   String @map("topic_id") @db.Uuid
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  topic   Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([productId, topicId])
+  @@index([topicId])
+  @@map("product_topics")
+}
+
+model EditorialReview {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @unique @map("product_id") @db.Uuid
+  /// 1 a 5 (CHECK no SQL da migration).
+  rating    Int      @db.SmallInt
+  summary   String?  @db.VarChar(280)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("editorial_reviews")
+}

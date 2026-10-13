@@ -1,20 +1,44 @@
+import { z } from "zod";
+
+import { idSchema } from "@/lib/validation/common";
 import type { ProductDTO, ReviewedProductDTO } from "@/types/api";
 
-import { productRepository } from "../repositories";
+import { NotFoundError } from "../errors";
+import { productRepository, voteRepository } from "../repositories";
 import type {
   Product,
   ProductRepository,
   ReviewedProduct,
 } from "../repositories/productRepository";
+import type { VoteRepository } from "../repositories/voteRepository";
+import { parseInput } from "../validation";
 
 type Dependencies = {
   productRepository: ProductRepository;
+  voteRepository: Pick<VoteRepository, "votedProductIds">;
 };
+
+/** Quem está vendo a lista: basta o id do Clerk (não cria usuário). */
+type Viewer = { externalId: string };
 
 /** Quantos revisados a lateral mostra (CLAUDE.md › Regras de negócio, 9). */
 const REVIEWED_LIMIT = 3;
 
-function toProductDTO(product: Product): ProductDTO {
+/**
+ * `?limit=` de `/products/reviewed`: de 1 a 10. A API não prevê erro nesse
+ * endpoint, então valor ausente ou inválido vira o padrão.
+ */
+const reviewedLimitSchema = z.coerce
+  .number()
+  .int()
+  .min(1)
+  .max(10)
+  .catch(REVIEWED_LIMIT);
+
+export function toProductDTO(
+  product: Product,
+  viewerHasVoted = false,
+): ProductDTO {
   return {
     id: product.id,
     title: product.title,
@@ -25,8 +49,7 @@ function toProductDTO(product: Product): ProductDTO {
     visits: product.visits,
     status: product.status,
     topics: product.topics,
-    // Preenchido com o voto do usuário logado na Fase 7.
-    viewerHasVoted: false,
+    viewerHasVoted,
     createdAt: product.createdAt.toISOString(),
   };
 }
@@ -38,25 +61,58 @@ function toReviewedProductDTO(product: ReviewedProduct): ReviewedProductDTO {
   };
 }
 
-export function createProductService({ productRepository }: Dependencies) {
+export function productNotFound(): NotFoundError {
+  return new NotFoundError("Produto não encontrado.", {
+    code: "PRODUCT_NOT_FOUND",
+  });
+}
+
+export function createProductService({
+  productRepository,
+  voteRepository,
+}: Dependencies) {
   return {
-    async listLaunched(): Promise<ProductDTO[]> {
+    /** Lista principal; com `viewer`, preenche `viewerHasVoted`. */
+    async listLaunched(viewer: Viewer | null = null): Promise<ProductDTO[]> {
       const products = await productRepository.listLaunched();
-      return products.map(toProductDTO);
+      if (!viewer) return products.map((product) => toProductDTO(product));
+
+      const voted = await voteRepository.votedProductIds(
+        viewer.externalId,
+        products.map((product) => product.id),
+      );
+      return products.map((product) =>
+        toProductDTO(product, voted.has(product.id)),
+      );
     },
 
-    async listReviewed(): Promise<ReviewedProductDTO[]> {
-      const products = await productRepository.listReviewed(REVIEWED_LIMIT);
+    /** "Produtos revisados por nós": por nota decrescente, até `limit` (padrão 3). */
+    async listReviewed(limit?: unknown): Promise<ReviewedProductDTO[]> {
+      const products = await productRepository.listReviewed(
+        reviewedLimitSchema.parse(limit ?? REVIEWED_LIMIT),
+      );
       return products.map(toReviewedProductDTO);
     },
 
     async listUpcoming(): Promise<ProductDTO[]> {
       const products = await productRepository.listUpcoming();
-      return products.map(toProductDTO);
+      return products.map((product) => toProductDTO(product));
+    },
+
+    /** Clique no link do produto: +1 visita, de qualquer perfil (regra 6). */
+    async registerVisit(productId: unknown): Promise<void> {
+      const id = parseInput(idSchema, productId, "id");
+
+      if (!(await productRepository.incrementVisits(id))) {
+        throw productNotFound();
+      }
     },
   };
 }
 
 export type ProductService = ReturnType<typeof createProductService>;
 
-export const productService = createProductService({ productRepository });
+export const productService = createProductService({
+  productRepository,
+  voteRepository,
+});

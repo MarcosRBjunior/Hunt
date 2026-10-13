@@ -52,6 +52,9 @@
   --color-line-strong: #c9ccd6;
   --color-live: #f26b55;
   --color-star: #f5ad32;
+  --color-danger: #c0392b;
+  --color-danger-hover: #a93226;
+  --color-danger-subtle: #fdf0ee;
   --color-accent-green: #188d78;
   --color-accent-green-bg: #e9faf5;
   --color-accent-green-inner: #bdf0df;

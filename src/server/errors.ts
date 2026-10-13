@@ -79,3 +79,14 @@ export class BusinessRuleError extends AppError {
     super("BUSINESS_RULE_VIOLATION", message, options);
   }
 }
+
+export class ServiceUnavailableError extends AppError {
+  readonly status = 503;
+
+  constructor(
+    message = "Serviço indisponível no momento.",
+    options?: AppErrorOptions,
+  ) {
+    super("SERVICE_UNAVAILABLE", message, options);
+  }
+}
