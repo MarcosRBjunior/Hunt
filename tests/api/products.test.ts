@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET } from "@/app/api/v1/products/route";
 import { voteRepository } from "@/server/repositories";
-import type { ApiSuccess, ProductDTO } from "@/types/api";
+import type { ApiError, ApiSuccess, ProductDTO } from "@/types/api";
 
 import { apiRequest, routeParams } from "../helpers/apiRequest";
 
@@ -26,15 +26,23 @@ beforeEach(() => {
   session.current = { userId: null, sessionClaims: null };
 });
 
-async function getProducts() {
+async function getProducts(query = "") {
   const response = await GET(
-    apiRequest("GET", "/api/v1/products"),
+    apiRequest("GET", `/api/v1/products${query}`),
     routeParams({}),
   );
   return {
     response,
     body: (await response.json()) as ApiSuccess<ProductDTO[]>,
   };
+}
+
+async function getProductsError(query: string) {
+  const response = await GET(
+    apiRequest("GET", `/api/v1/products${query}`),
+    routeParams({}),
+  );
+  return { response, body: (await response.json()) as ApiError };
 }
 
 describe("GET /api/v1/products", () => {
@@ -90,5 +98,53 @@ describe("GET /api/v1/products", () => {
     expect(response.status).toBe(200);
     expect(body.data).toHaveLength(4);
     expect(body.data.every((product) => !product.viewerHasVoted)).toBe(true);
+  });
+});
+
+describe("GET /api/v1/products?topic=", () => {
+  it("TC-13: ?topic=saas traz só os produtos SaaS, por votos", async () => {
+    const { response, body } = await getProducts("?topic=saas");
+
+    expect(response.status).toBe(200);
+    expect(body.data.map(({ title, upvotes }) => [title, upvotes])).toEqual([
+      ["Layer", 202],
+      ["Sunnie", 102],
+      ["Orbit", 29],
+    ]);
+    expect(
+      body.data.every((product) =>
+        product.topics.some((topic) => topic.slug === "saas"),
+      ),
+    ).toBe(true);
+  });
+
+  it("TC-14: ?topic=inexistente responde 404 TOPIC_NOT_FOUND", async () => {
+    const { response, body } = await getProductsError("?topic=inexistente");
+
+    expect(response.status).toBe(404);
+    expect(body.error).toMatchObject({
+      code: "TOPIC_NOT_FOUND",
+      message: "Topic não encontrado.",
+    });
+  });
+
+  it("?topic= vazio devolve a lista inteira", async () => {
+    const { response, body } = await getProducts("?topic=");
+
+    expect(response.status).toBe(200);
+    expect(body.data).toHaveLength(4);
+  });
+
+  it.each([
+    ["repetido", "?topic=saas&topic=tech", "Escolha um topic por vez."],
+    ["mal formado", "?topic=SaaS", "Topic inválido."],
+  ])("topic %s responde 400 VALIDATION_ERROR", async (_, query, message) => {
+    const { response, body } = await getProductsError(query);
+
+    expect(response.status).toBe(400);
+    expect(body.error).toMatchObject({
+      code: "VALIDATION_ERROR",
+      details: { fields: { topic: [message] } },
+    });
   });
 });

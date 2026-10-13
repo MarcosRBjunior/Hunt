@@ -33,6 +33,9 @@ describe("PrismaProductRepository com os dados do mock", () => {
     const mock = new MockProductRepository(records);
 
     expect(await prisma.listLaunched()).toEqual(await mock.listLaunched());
+    expect(await prisma.listLaunched("saas")).toEqual(
+      await mock.listLaunched("saas"),
+    );
     expect(await prisma.listReviewed(3)).toEqual(await mock.listReviewed(3));
     expect(await prisma.listUpcoming()).toEqual(await mock.listUpcoming());
   });

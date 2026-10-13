@@ -1,6 +1,8 @@
 import { z } from "zod";
 
+import { isTopicSlug, type TopicSlug } from "@/lib/topics";
 import { idSchema } from "@/lib/validation/common";
+import { topicFilterSchema } from "@/lib/validation/topic";
 import type { ProductDTO, ReviewedProductDTO } from "@/types/api";
 
 import { NotFoundError } from "../errors";
@@ -61,6 +63,22 @@ function toReviewedProductDTO(product: ReviewedProduct): ReviewedProductDTO {
   };
 }
 
+/**
+ * `?topic=` → slug do filtro, ou `undefined` sem filtro. Formato inválido é
+ * 400; topic fora dos 5 do seed é 404 `TOPIC_NOT_FOUND`.
+ */
+function parseTopicFilter(topic: unknown): TopicSlug | undefined {
+  const slug = parseInput(topicFilterSchema, topic, "topic");
+  if (slug === undefined) return undefined;
+
+  if (!isTopicSlug(slug)) {
+    throw new NotFoundError("Topic não encontrado.", {
+      code: "TOPIC_NOT_FOUND",
+    });
+  }
+  return slug;
+}
+
 export function productNotFound(): NotFoundError {
   return new NotFoundError("Produto não encontrado.", {
     code: "PRODUCT_NOT_FOUND",
@@ -72,9 +90,17 @@ export function createProductService({
   voteRepository,
 }: Dependencies) {
   return {
-    /** Lista principal; com `viewer`, preenche `viewerHasVoted`. */
-    async listLaunched(viewer: Viewer | null = null): Promise<ProductDTO[]> {
-      const products = await productRepository.listLaunched();
+    /**
+     * Lista principal; com `viewer`, preenche `viewerHasVoted`. `topic` é o
+     * `?topic=` da URL (um por vez, regra 10).
+     */
+    async listLaunched(
+      viewer: Viewer | null = null,
+      topic?: unknown,
+    ): Promise<ProductDTO[]> {
+      const products = await productRepository.listLaunched(
+        parseTopicFilter(topic),
+      );
       if (!viewer) return products.map((product) => toProductDTO(product));
 
       const voted = await voteRepository.votedProductIds(
