@@ -2,7 +2,7 @@
 
 Vitrine pública de produtos de startups, ordenada por upvotes. Visitantes navegam e filtram por trending topics, usuários logados votam e um admin cadastra os produtos. Projeto 06 do portfólio, inspirado no Product Hunt.
 
-> Em construção. O andamento por fase está em [Etapas](#etapas).
+> No ar em https://hunt-flame-nine.vercel.app (nível 2, o MVP). O nível 3 está em construção; o andamento por fase está em [Etapas](#etapas).
 
 ## Stack
 
@@ -66,17 +66,17 @@ O seed (`prisma/seed.ts`) roda quantas vezes for preciso sem duplicar nada:
 - **sempre** cria os 5 topics fixos (`ia`, `produtividade`, `marketing`, `saas`, `tech`);
 - **com `SEED_DEMO=true`** cria os produtos de `src/mocks/products.json` (mesmos ids), com topics, revisões, 298 usuários fictícios (`seed_demo_user_0001`, ...) e 631 votos, mantendo `upvotes = count(votes)`.
 
-Em produção (Railway) a variável fica vazia e o banco começa só com os topics. As migrations de produção rodam no workflow `.github/workflows/migrate.yml` a cada push na `main` (e à mão, na aba Actions), nunca no build da Vercel, que também roda nos previews. A URL do banco fica no segredo `PRODUCTION_DATABASE_URL` do environment `production` do GitHub. A conexão com o Railway às vezes trava, então são até 3 tentativas com limite de tempo.
+Em produção (Railway) a variável fica vazia e o banco começa só com os topics. As migrations de produção rodam no workflow `.github/workflows/migrate.yml` a cada push na `main` (e à mão, na aba Actions), nunca no build da Vercel, que também roda nos previews. A URL do banco fica no segredo `PRODUCTION_DATABASE_URL` do environment `Production` do GitHub. A conexão com o Railway às vezes trava, então são até 3 tentativas com limite de tempo.
 
 ### Ambientes
 
-| Ambiente        | `PRODUCT_SOURCE`      | Banco                                                      |
-| --------------- | --------------------- | ---------------------------------------------------------- |
-| Local           | `mock` ou `prisma`    | `hunt` no Docker (com a demo)                              |
-| Testes          | —                     | `hunt_test` no Docker (criado e migrado sozinho)           |
-| E2E             | `prisma`              | `hunt_e2e` no Docker (zerado, com a demo, a cada execução) |
-| Preview Vercel  | `prisma`              | `hunt_preview` no Railway (com a demo)                     |
-| Produção Vercel | `mock` até a `v2.0.0` | `railway` no Railway (só os topics)                        |
+| Ambiente        | `PRODUCT_SOURCE`   | Banco                                                      |
+| --------------- | ------------------ | ---------------------------------------------------------- |
+| Local           | `mock` ou `prisma` | `hunt` no Docker (com a demo)                              |
+| Testes          | —                  | `hunt_test` no Docker (criado e migrado sozinho)           |
+| E2E             | `prisma`           | `hunt_e2e` no Docker (zerado, com a demo, a cada execução) |
+| Preview Vercel  | `prisma`           | `hunt_preview` no Railway (com a demo)                     |
+| Produção Vercel | `prisma`           | `railway` no Railway (começa só com os topics)             |
 
 Os testes de integração (`tests/integration/`) rodam o mesmo contrato do mock contra o Postgres. Por segurança, eles só aceitam um banco cujo nome termina em `_test`, porque apagam as tabelas entre um teste e outro. No CI, o Postgres sobe como service container.
 
@@ -146,6 +146,27 @@ O login nos testes usa o helper `clerk.signIn` do `@clerk/testing`: ele cria um 
 
 Localmente, precisa do Postgres (`npm run db:up`), do Chromium do Playwright (`npx playwright install chromium`) e das chaves do Clerk de desenvolvimento no `.env.local` (a preparação recusa uma chave que não comece com `sk_test_`). No CI, o job **E2E** roda depois do job principal, com as chaves nos segredos `CLERK_DEV_PUBLISHABLE_KEY` e `CLERK_DEV_SECRET_KEY` (cadastrados também nos segredos do Dependabot, para os PRs dele). Se falhar, o relatório do Playwright fica nos artefatos da execução.
 
+## Produção
+
+O site está em https://hunt-flame-nine.vercel.app (Vercel, publicado a partir da `main`), com o banco no Railway.
+
+- **Deploy**: todo merge na `main` publica a produção na Vercel e roda o `migrate.yml` (veja [Banco de dados](#banco-de-dados)). Os previews usam o banco `hunt_preview`.
+- **Dados**: a produção começa vazia, só com os 5 topics. Os produtos são cadastrados pelo admin.
+- **Saúde**: `GET /api/health` responde `{"data":{"status":"ok","database":"ok"}}` com o banco no ar e 503 sem ele.
+- **Webhook**: o endpoint do Clerk aponta para `https://hunt-flame-nine.vercel.app/api/webhooks/clerk`, só com o evento `user.deleted`. Os previews ficam atrás do login da Vercel, então o webhook só recebe eventos em produção.
+- **Desfazer um deploy**: na Vercel, _Deployments_ › deploy anterior › _Instant Rollback_. O rollback não desfaz migrations.
+
+### Clerk: instância de desenvolvimento em produção
+
+A especificação pede a instância de produção do Clerk, mas ela exige um domínio próprio (com DNS), e o projeto usa o domínio gratuito da Vercel. Por isso a produção usa a mesma instância de desenvolvimento dos previews. É um desvio aceito no MVP, com estas consequências:
+
+- limite de 100 usuários;
+- os formulários do Clerk mostram o selo "Development mode";
+- depois do login pelo GitHub, a URL pode trazer por um instante o parâmetro `__clerk_db_jwt`: é o token que a instância de desenvolvimento usa para manter a sessão entre domínios;
+- os usuários de teste do E2E (`e2e-admin+clerk_test@example.com`, com papel de admin, e `e2e-user+clerk_test@example.com`) ficam na mesma instância. Eles não têm senha, e o Clerk não oferece nenhum jeito de entrar neles pela tela, só por token criado com a chave secreta. Se um dia o login por código no e-mail for ligado no Clerk, esses e-mails precisam mudar, porque e-mails `+clerk_test` aceitam o código fixo `424242`.
+
+Para passar para a instância de produção: registrar um domínio, criar a instância de produção no Clerk, configurar o DNS e trocar as chaves, o OAuth do GitHub e o endpoint do webhook.
+
 ## Estrutura
 
 ```
@@ -167,7 +188,7 @@ As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](
 | Nível   | Entrega                                                  | Status               |
 | ------- | -------------------------------------------------------- | -------------------- |
 | 1       | Layout + listagem vinda de API mock                      | Concluído (`v1.0.0`) |
-| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | Em andamento         |
+| 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | Concluído (`v2.0.0`) |
 | 3       | Filtro por trending topics                               | —                    |
 
 ## Fluxo de trabalho
