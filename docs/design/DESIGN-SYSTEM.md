@@ -165,14 +165,15 @@ Glifos de texto: `→`, `↓`, `✓`, `★`. O favicon (`src/app/icon.svg`) é a
 | `ui/EmptyState`, `ui/ErrorState`      | erro com "Tentar novamente"                           | Painel tracejado (vazio) ou sólido com `role="alert"` (erro) |
 | `ui/Skeleton`                         | —                                                     | Bloco `surface-tag` com `animate-pulse`                      |
 | `ui/SectionErrorBoundary`             | —                                                     | `catchError` do Next: isola o erro de uma seção              |
-| `topics/TrendingTopicsBar`            | só visual no nível 1                                  | Pulse dot + título + chips (pill 12/600) + "Atualizado agora" |
+| `topics/TrendingTopicsBar`            | chip default, hover (`primary-subtle`, borda `primary-border`, texto `primary`), ativo (`primary` cheio, texto branco, `aria-current`) | Pulse dot + título + chips-link (pill 12/600) + "Atualizado agora" |
+| `topics/CategoryList`                 | hover (`primary-subtle`, nome `primary`); estado vazio | Cards com nome, "N produtos" e `#slug`, ligando a `/?topic=slug` |
 | `products/ProductCard`                | default, hover (branco, borda, sombra, lift)          | Grid: rank 28 · ícone 68 · texto · upvote 58                 |
 | `products/ProductLogo`                | `card`, `review`, `coming`; logo ou arte por `id`     | 58px com área interna (card), 50px (+7°), 38px               |
 | `products/UpvoteButton`               | default; hover (`primary-subtle`, borda `primary-border`, texto `primary`, lift, `primary-sm`); votado (`primary` cheio, texto branco); aviso de falha (balão `ink` abaixo, some em 4 s) | 54×62, raio 13, seta 19px + contagem 11/800 |
 | `products/ProductLink`, `VisitCount`  | o clique soma 1 na contagem na hora                   | Link do título cobrindo o card · "N visitas" 11px            |
 | `layout/AdminLink`                    | só para admin                                         | Botão secundário "Admin" ao lado do avatar                   |
 | `admin/AdminProductTable`             | lista ou estado vazio; rola na horizontal no celular  | Tabela com logo 38px, status (chip), votos, visitas, topics, data, Editar/Remover |
-| `admin/ProductForm`                   | erro por campo (`danger`), contador acima do limite, prévia do logo | Campos 42px, raio 12; contador `n/máx`; prévia 58px |
+| `admin/ProductForm`                   | erro por campo (`danger`), contador acima do limite, prévia do logo; topic marcado (`primary-subtle`, borda e texto `primary`) | Campos 42px, raio 12; contador `n/máx`; prévia 58px; topics em pills com caixa de seleção |
 | `admin/DeleteProductButton`           | confirmação em `<dialog>`, erro dentro dele           | Modal 440px, raio 18, fundo `ink` 40%                        |
 | `products/ProductList`                | lista ou estado vazio                                 | `ol` de cards, gap 10                                        |
 | `sidebar/ReviewedProductCard`         | hover (desliza à esquerda)                            | Título, resumo, rating à esquerda; ícone à direita           |
@@ -198,7 +199,7 @@ O Make original tinha alguns problemas que o próprio levantamento apontou. Este
 | Fundo "soft" só para verde e azul                                     | Também amarelo (`#FFF0C4`) e roxo (`#E8E1FF`)                               | Qualquer produto pode receber qualquer acento            |
 | Link "Quero ser avisado →" no card "em breve"                         | Removido                                                                    | Notificação está fora do escopo                          |
 | Footer "Descubra algo extraordinário. · © 2025 nova"                  | Crédito do Projeto 06 + GitHub + LinkedIn                                   | Regra do CLAUDE.md                                       |
-| Chips e upvote com hover de ação                                      | Sem hover no nível 1 (filtro na Fase 10, voto na Fase 8)                    | Não sugerir uma ação que ainda não existe                |
+| Chips e upvote com hover de ação                                      | Sem hover no nível 1; hover a partir da Fase 8 (voto) e da Fase 10 (filtro) | Não sugerir uma ação que ainda não existe                |
 | Upvote em hover: roxo cheio (Fase 8)                                  | Hover em roxo claro; roxo cheio só quando votado                            | Hover e votado iguais escondiam se o voto foi removido   |
 | Sem `prefers-reduced-motion`                                          | Transições e animações desligadas quando o usuário pede                     | Acessibilidade                                           |
 

@@ -30,4 +30,15 @@ describe("ProductList", () => {
     expect(screen.queryByRole("list", { name: "Produtos" })).toBeNull();
     expect(screen.getByText("Nenhum produto lançado ainda")).toBeTruthy();
   });
+
+  it("com filtro de topic e sem produtos, diz qual topic e oferece limpar o filtro", () => {
+    render(
+      <ProductList products={[]} topic={{ slug: "saas", name: "SaaS" }} />,
+    );
+
+    expect(screen.getByText("Nenhum produto em SaaS ainda")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Limpar filtro" }).getAttribute("href"),
+    ).toBe("/");
+  });
 });

@@ -201,19 +201,36 @@ describe("productFormSchema", () => {
         ...validBody,
         logoUrl: null,
         status: "UPCOMING",
-        topicSlugs: ["tech"],
+        topicSlugs: ["tech", "saas"],
         upvotes: 500,
       }),
-    ).toEqual({ ...validBody, logoUrl: null, status: "UPCOMING" });
+    ).toEqual({
+      ...validBody,
+      logoUrl: null,
+      status: "UPCOMING",
+      topicSlugs: ["tech", "saas"],
+    });
   });
 
-  it("exige os cinco campos, com logo nulo quando não há", () => {
+  it("exige os seis campos, com logo nulo e lista vazia quando não há", () => {
     expect(fieldErrors(productFormSchema.safeParse({}))).toEqual([
       "title",
       "description",
       "url",
       "logoUrl",
       "status",
+      "topicSlugs",
     ]);
+  });
+
+  it("aceita produto sem topics", () => {
+    expect(
+      productFormSchema.parse({
+        ...validBody,
+        logoUrl: null,
+        status: "LAUNCHED",
+        topicSlugs: [],
+      }).topicSlugs,
+    ).toEqual([]);
   });
 });

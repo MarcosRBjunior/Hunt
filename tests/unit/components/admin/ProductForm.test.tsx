@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ProductForm } from "@/components/admin/ProductForm";
@@ -76,6 +76,7 @@ describe("ProductForm", () => {
       url: "https://layer.example.com",
       logoUrl: null,
       status: "LAUNCHED",
+      topicSlugs: [],
     });
     expect(mockRouter.push).toHaveBeenCalledWith("/admin/produtos");
     expect(mockRouter.refresh).toHaveBeenCalled();
@@ -152,7 +153,7 @@ describe("ProductForm", () => {
     ).toBe(false);
   });
 
-  it("na edição, começa preenchido (status incluído) e salva com PATCH sem os topics", async () => {
+  it("na edição, começa preenchido (status e topics incluídos) e salva com PATCH", async () => {
     const product = buildProductDTO({
       logoUrl: "https://example.com/logo.png",
       status: "UPCOMING",
@@ -171,14 +172,79 @@ describe("ProductForm", () => {
       `/api/v1/admin/products/${product.id}`,
       expect.objectContaining({ method: "PATCH" }),
     );
-    // Os topics não vão no body: ficam como estão.
+    // A lista inteira de topics vai no body (no PATCH, ela substitui a anterior).
     expect(sentBody(fetch)).toEqual({
       title: "Layer",
       description: product.description,
       url: product.url,
       logoUrl: null,
       status: "UPCOMING",
+      topicSlugs: ["saas", "tech"],
     });
+  });
+
+  it("mostra os 5 topics em ordem alfabética, marcados conforme o produto", () => {
+    render(<ProductForm product={buildProductDTO()} />);
+
+    const group = screen.getByRole("group", { name: "Topics (opcional)" });
+    const boxes = within(group).getAllByRole("checkbox") as HTMLInputElement[];
+
+    expect(
+      boxes.map((box) => [box.labels?.[0]?.textContent, box.checked]),
+    ).toEqual([
+      ["Inteligência artificial", false],
+      ["Marketing", false],
+      ["Produtividade", false],
+      ["SaaS", true],
+      ["Tech", true],
+    ]);
+  });
+
+  it("cadastra com os topics marcados, na ordem da tela", async () => {
+    const fetch = respondWith(201, { data: buildProductDTO() });
+    render(<ProductForm />);
+
+    fillValid();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Tech" }));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Inteligência artificial" }),
+    );
+    await submit();
+
+    expect(sentBody(fetch)).toMatchObject({ topicSlugs: ["ia", "tech"] });
+  });
+
+  it("na edição, desmarcar todos os topics manda a lista vazia", async () => {
+    const product = buildProductDTO();
+    const fetch = respondWith(200, { data: product });
+    render(<ProductForm product={product} />);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "SaaS" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Tech" }));
+    await submit("Salvar alterações");
+
+    expect(sentBody(fetch)).toMatchObject({ topicSlugs: [] });
+  });
+
+  it("mostra o erro de topics da API no grupo e foca a primeira caixa", async () => {
+    respondWith(400, {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Dados inválidos.",
+        details: { fields: { topicSlugs: ["Topic inexistente."] } },
+      },
+    });
+    render(<ProductForm />);
+
+    fillValid();
+    await submit();
+
+    const group = screen.getByRole("group", { name: "Topics (opcional)" });
+    const message = within(group).getByText("Topic inexistente.");
+    expect(group.getAttribute("aria-describedby")).toContain(message.id);
+    expect(document.activeElement).toBe(
+      screen.getByRole("checkbox", { name: "Inteligência artificial" }),
+    );
   });
 
   it("cadastra como Em breve quando o status é trocado", async () => {
