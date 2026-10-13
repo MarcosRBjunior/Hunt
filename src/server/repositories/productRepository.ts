@@ -45,9 +45,10 @@ export type ProductChanges = Partial<NewProduct>;
 export interface ProductRepository {
   /**
    * Produtos `LAUNCHED`, ordenados por `upvotes DESC, createdAt DESC`,
-   * sem paginação.
+   * sem paginação. Com `topic`, só os produtos desse topic (cada um com todas
+   * as suas tags).
    */
-  listLaunched(): Promise<Product[]>;
+  listLaunched(topic?: TopicSlug): Promise<Product[]>;
 
   /** Produtos com revisão, por `rating DESC, createdAt DESC`, até `limit`. */
   listReviewed(limit: number): Promise<ReviewedProduct[]>;

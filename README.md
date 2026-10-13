@@ -2,7 +2,7 @@
 
 Vitrine pública de produtos de startups, ordenada por upvotes. Visitantes navegam e filtram por trending topics, usuários logados votam e um admin cadastra os produtos. Projeto 06 do portfólio, inspirado no Product Hunt.
 
-> No ar em https://hunt-flame-nine.vercel.app (nível 2, o MVP). O nível 3 está em construção; o andamento por fase está em [Etapas](#etapas).
+> No ar em https://hunt-flame-nine.vercel.app, com os 3 níveis entregues ([Etapas](#etapas)). Falta o fechamento: medição de desempenho com 1.000 produtos e README final com prints.
 
 ## Stack
 
@@ -90,7 +90,7 @@ No Railway, a URL é a `DATABASE_PUBLIC_URL` do serviço Postgres (a `DATABASE_U
   - `requireUser()`: 401 sem sessão; cria o usuário local (por `external_id`) na primeira ação autenticada, sem duplicar mesmo com cliques simultâneos;
   - `requireAdmin()`: 401 sem sessão, 403 sem papel de admin;
   - `requireAdminPage()`: para as páginas de `/admin`; sem sessão vai para o login (e volta para a página pedida), sem papel de admin vai para `/acesso-negado`.
-- **Área admin** em `/admin/produtos`: tabela com todos os produtos, cadastro, edição e remoção (com confirmação). O formulário tem nome, descrição, site, logo e status (topics entram na Fase 10); a página de edição também tem a revisão (nota de 1 a 5 e resumo). O link "Admin" do header só aparece para admin, mas é só atalho: páginas e API conferem o papel de novo no servidor.
+- **Área admin** em `/admin/produtos`: tabela com todos os produtos, cadastro, edição e remoção (com confirmação). O formulário tem nome, descrição, site, logo, status e topics (caixas de seleção, nenhum ou vários); a página de edição também tem a revisão (nota de 1 a 5 e resumo). O link "Admin" do header só aparece para admin, mas é só atalho: páginas e API conferem o papel de novo no servidor.
 - **Admin** é quem tem `{"role": "admin"}` no _Public metadata_ do usuário no Clerk. O papel chega ao servidor pelo token de sessão, com esta customização em **Sessions › Customize session token**: `{"metadata": "{{user.public_metadata}}"}`. O `unsafeMetadata` (editável pelo próprio usuário) nunca é usado.
 - **Escritas** (POST/PATCH/PUT/DELETE) só passam com o header `Origin` do próprio site (mesmo critério das Server Actions do Next: o host do `Origin` tem de bater com o `x-forwarded-host` ou o `host`). Sem ele, ou de outro site, a resposta é `403 INVALID_ORIGIN`. Escritas com corpo exigem `Content-Type: application/json`.
 - **Entradas** passam pelos schemas Zod de `src/lib/validation` (compartilhados com os formulários): ids são UUID antes de chegar ao banco, `url` e `logoUrl` só aceitam http(s) (o banco tem o mesmo CHECK) e campos fora do schema, como `upvotes` e `visits`, são descartados.
@@ -102,9 +102,10 @@ Sucesso: `{ "data": ... }`. Erro: `{ "error": { "code", "message", "details" } }
 
 | Método | Rota                                 | Acesso              | Sucesso                                                  | Erros                                                                                  |
 | ------ | ------------------------------------ | ------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/products`                   | Público             | 200 `ProductDTO[]`                                       | —                                                                                      |
+| GET    | `/api/v1/products?topic=slug`        | Público             | 200 `ProductDTO[]`                                       | 400, 404 `TOPIC_NOT_FOUND`                                                             |
 | GET    | `/api/v1/products/reviewed?limit=3`  | Público             | 200 `ReviewedProductDTO[]`                               | —                                                                                      |
 | GET    | `/api/v1/products/upcoming`          | Público             | 200 `ProductDTO[]`                                       | —                                                                                      |
+| GET    | `/api/v1/topics`                     | Público             | 200 `TopicWithCountDTO[]`                                | —                                                                                      |
 | POST   | `/api/v1/products/{id}/vote`         | Usuário             | 201 `VoteDTO`                                            | 400, 401, 403, 404 `PRODUCT_NOT_FOUND`, 409 `ALREADY_VOTED`, 422 `PRODUCT_NOT_VOTABLE` |
 | DELETE | `/api/v1/products/{id}/vote`         | Usuário             | 200 `VoteDTO`                                            | 400, 401, 403, 404 `VOTE_NOT_FOUND`                                                    |
 | POST   | `/api/v1/products/{id}/visit`        | Público             | 204                                                      | 400, 403, 404 `PRODUCT_NOT_FOUND`                                                      |
@@ -117,6 +118,9 @@ Sucesso: `{ "data": ... }`. Erro: `{ "error": { "code", "message", "details" } }
 | GET    | `/api/health`                        | Público             | 200 `{ status, database }`                               | 503 `DATABASE_UNAVAILABLE`                                                             |
 
 - **Lista principal**: produtos `LAUNCHED`, por votos (no empate, os mais recentes primeiro), sem paginação. Com sessão, `viewerHasVoted` marca os produtos em que o usuário votou.
+- **Filtro por topic**: `?topic=slug` deixa na lista principal só os produtos daquele topic, na mesma ordem. Um topic por vez: repetido (`?topic=a&topic=b`) ou fora do formato de slug dá 400; slug fora dos 5 do seed dá 404 `TOPIC_NOT_FOUND`; vazio é o mesmo que sem filtro.
+- **Topics**: os 5 do seed, em ordem alfabética, cada um com `productCount`, que conta só os produtos `LAUNCHED` (o mesmo que o filtro mostra). Sem cache.
+- **Filtro na tela**: os chips da barra de trending topics são links para `/?topic=slug` (funcionam sem JavaScript); o ativo fica roxo e, clicado de novo, tira o filtro. Só a coluna principal filtra; a lateral não muda. Topic sem produtos lançados mostra um estado vazio com o nome dele, e topic inexistente mostra "Categoria não encontrada" na coluna, os dois com "Limpar filtro". `/categorias` mostra os 5 topics com a contagem, cada um levando ao filtro.
 - **Voto**: toggle (a interface manda POST com o botão inativo e DELETE com ele ativo). Votar é uma transação (INSERT do voto + `upvotes + 1`); o UNIQUE `(user_id, product_id)` barra o repetido, mesmo com cliques simultâneos (`P2002` → 409). Remover tira 1 de `upvotes`, que nunca fica negativo. Produto `UPCOMING` não recebe voto.
 - **Voto na tela**: o botão atualiza na hora (otimista) e volta se a API falhar. A lista não se reordena depois do voto; a nova posição aparece no próximo carregamento. Visitante vai para o login e volta para a página onde estava.
 - **Visita**: cada clique soma 1 em `visits`, de qualquer perfil e sem deduplicar. Sem corpo, para funcionar com `navigator.sendBeacon` (com `fetch` + `keepalive` de reserva); o link abre mesmo se o registro falhar. Visitas só são exibidas: nunca entram na ordenação.
@@ -135,7 +139,7 @@ O design system "nova" foi extraído do Figma Make e está em [`docs/design/`](d
 
 ## Testes E2E
 
-Os testes de `tests/e2e/` (Playwright, só Chromium) cobrem o TC-19 (visitante clica no voto, faz login e vota) e o TC-20 (admin cadastra um produto e ele aparece na home com 0 votos). Cada execução:
+Os testes de `tests/e2e/` (Playwright, só Chromium) cobrem o TC-19 (visitante clica no voto, faz login e vota), o TC-20 (admin cadastra um produto e ele aparece na home com 0 votos), o TC-13 e o TC-14 (filtro por topic na home, incluindo topic inexistente) e a página Categorias levando ao filtro. Cada execução:
 
 1. faz o build e sobe o app na porta 3100 com `PRODUCT_SOURCE=prisma`;
 2. zera o banco `hunt_e2e` e roda o seed da demo (por segurança, só aceita banco com nome terminado em `_e2e`);
@@ -189,7 +193,7 @@ As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](
 | ------- | -------------------------------------------------------- | -------------------- |
 | 1       | Layout + listagem vinda de API mock                      | Concluído (`v1.0.0`) |
 | 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | Concluído (`v2.0.0`) |
-| 3       | Filtro por trending topics                               | —                    |
+| 3       | Filtro por trending topics                               | Concluído (`v3.0.0`) |
 
 ## Fluxo de trabalho
 

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { SEED_TOPICS, sortTopicsByName, TOPIC_SLUGS } from "@/lib/topics";
+import {
+  isTopicSlug,
+  SEED_TOPICS,
+  sortTopicsByName,
+  TOPIC_SLUGS,
+} from "@/lib/topics";
 
 describe("SEED_TOPICS", () => {
   it("tem exatamente os 5 topics do seed do CLAUDE.md", () => {
@@ -38,5 +43,18 @@ describe("sortTopicsByName", () => {
       "tech",
     ]);
     expect(topics[0]?.slug).toBe("tech");
+  });
+});
+
+describe("isTopicSlug", () => {
+  it.each(["ia", "produtividade", "marketing", "saas", "tech"])(
+    "aceita o slug do seed %s",
+    (slug) => {
+      expect(isTopicSlug(slug)).toBe(true);
+    },
+  );
+
+  it.each(["inexistente", "SaaS", "", "design"])("recusa %j", (slug) => {
+    expect(isTopicSlug(slug)).toBe(false);
   });
 });

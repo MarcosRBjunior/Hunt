@@ -106,6 +106,74 @@ describe("productService.listLaunched", () => {
   });
 });
 
+describe("productService.listLaunched (topic)", () => {
+  it("sem topic, pede a lista inteira", async () => {
+    const listLaunched = vi.fn(async () => []);
+    const service = serviceWith({ listLaunched });
+
+    await service.listLaunched(null);
+
+    expect(listLaunched).toHaveBeenCalledWith(undefined);
+  });
+
+  it.each([
+    ["string", "saas"],
+    ["lista com um item (getAll da URL)", ["saas"]],
+  ])("TC-13: com topic (%s), filtra pelo slug", async (_, topic) => {
+    const listLaunched = vi.fn(async () => [buildProduct({ title: "Layer" })]);
+    const service = serviceWith({ listLaunched });
+
+    const products = await service.listLaunched(null, topic);
+
+    expect(listLaunched).toHaveBeenCalledWith("saas");
+    expect(products.map((product) => product.title)).toEqual(["Layer"]);
+  });
+
+  it.each(["", [], null])(
+    "topic vazio (%j) é o mesmo que sem filtro",
+    async (topic) => {
+      const listLaunched = vi.fn(async () => []);
+      const service = serviceWith({ listLaunched });
+
+      await service.listLaunched(null, topic);
+
+      expect(listLaunched).toHaveBeenCalledWith(undefined);
+    },
+  );
+
+  it("TC-14: topic inexistente lança 404 TOPIC_NOT_FOUND sem consultar o banco", async () => {
+    const listLaunched = vi.fn(async () => []);
+    const service = serviceWith({ listLaunched });
+
+    const error = await service
+      .listLaunched(null, "inexistente")
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(NotFoundError);
+    expect(error).toMatchObject({ code: "TOPIC_NOT_FOUND" });
+    expect(listLaunched).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["repetido", ["saas", "tech"], "Escolha um topic por vez."],
+    ["mal formado", "SaaS", "Topic inválido."],
+  ])(
+    "topic %s lança ValidationError no campo topic",
+    async (_, topic, message) => {
+      const service = serviceWith({ listLaunched: async () => [] });
+
+      const error = await service
+        .listLaunched(null, topic)
+        .catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error).toMatchObject({
+        details: { fields: { topic: [message] } },
+      });
+    },
+  );
+});
+
 describe("productService.listReviewed", () => {
   it("pede até 3 revisados e inclui a revisão no DTO", async () => {
     const listReviewed = vi.fn(async () => [

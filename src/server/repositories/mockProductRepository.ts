@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { sortTopicsByName, TOPIC_SLUGS } from "@/lib/topics";
+import { sortTopicsByName, TOPIC_SLUGS, type TopicSlug } from "@/lib/topics";
 import { httpUrlSchema } from "@/lib/validation/common";
 import rawProducts from "@/mocks/products.json";
 
@@ -78,9 +78,13 @@ export class MockProductRepository implements ProductRepository {
     this.records = records;
   }
 
-  async listLaunched(): Promise<Product[]> {
+  async listLaunched(topic?: TopicSlug): Promise<Product[]> {
     return this.records
-      .filter((record) => record.status === "LAUNCHED")
+      .filter(
+        (record) =>
+          record.status === "LAUNCHED" &&
+          (!topic || record.topics.some(({ slug }) => slug === topic)),
+      )
       .map(toProduct)
       .toSorted((a, b) => b.upvotes - a.upvotes || newestFirst(a, b));
   }

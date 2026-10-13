@@ -3,6 +3,11 @@ import { env } from "../env";
 import { MockProductRepository } from "./mockProductRepository";
 import { PrismaProductRepository } from "./prismaProductRepository";
 import type { ProductRepository } from "./productRepository";
+import {
+  MockTopicRepository,
+  PrismaTopicRepository,
+  type TopicRepository,
+} from "./topicRepository";
 import { PrismaUserRepository, type UserRepository } from "./userRepository";
 import {
   MockVoteRepository,
@@ -21,6 +26,12 @@ export const voteRepository: VoteRepository =
   env.PRODUCT_SOURCE === "prisma"
     ? new PrismaVoteRepository(getPrisma())
     : new MockVoteRepository();
+
+/** Topics (com a contagem de produtos) vêm da mesma fonte dos produtos. */
+export const topicRepository: TopicRepository =
+  env.PRODUCT_SOURCE === "prisma"
+    ? new PrismaTopicRepository(getPrisma())
+    : new MockTopicRepository();
 
 /** Usuários só existem no banco (são criados na primeira ação autenticada). */
 export const userRepository: UserRepository = new PrismaUserRepository(

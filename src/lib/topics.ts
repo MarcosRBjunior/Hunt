@@ -14,6 +14,16 @@ export const TOPIC_SLUGS = SEED_TOPICS.map((topic) => topic.slug) as [
   ...TopicSlug[],
 ];
 
+/** Os topics são só os 5 do seed (regra 10): qualquer outro slug não existe. */
+export function isTopicSlug(slug: string): slug is TopicSlug {
+  return (TOPIC_SLUGS as readonly string[]).includes(slug);
+}
+
+/** Topic do seed pelo slug, ou `undefined`. */
+export function findTopic(slug: string) {
+  return SEED_TOPICS.find((topic) => topic.slug === slug);
+}
+
 /** Ordem de exibição dos topics (barra, categorias e tags dos cards): alfabética pelo nome. */
 export function sortTopicsByName<T extends { name: string }>(
   topics: readonly T[],
