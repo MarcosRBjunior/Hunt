@@ -5,6 +5,12 @@ export type TopicDTO = {
   name: string;
 };
 
+/** Item de `GET /topics`. */
+export type TopicWithCountDTO = TopicDTO & {
+  /** Quantos produtos `LAUNCHED` têm o topic. */
+  productCount: number;
+};
+
 export type ProductDTO = {
   id: string;
   title: string;

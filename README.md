@@ -102,9 +102,10 @@ Sucesso: `{ "data": ... }`. Erro: `{ "error": { "code", "message", "details" } }
 
 | Método | Rota                                 | Acesso              | Sucesso                                                  | Erros                                                                                  |
 | ------ | ------------------------------------ | ------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/products`                   | Público             | 200 `ProductDTO[]`                                       | —                                                                                      |
+| GET    | `/api/v1/products?topic=slug`        | Público             | 200 `ProductDTO[]`                                       | 400, 404 `TOPIC_NOT_FOUND`                                                             |
 | GET    | `/api/v1/products/reviewed?limit=3`  | Público             | 200 `ReviewedProductDTO[]`                               | —                                                                                      |
 | GET    | `/api/v1/products/upcoming`          | Público             | 200 `ProductDTO[]`                                       | —                                                                                      |
+| GET    | `/api/v1/topics`                     | Público             | 200 `TopicWithCountDTO[]`                                | —                                                                                      |
 | POST   | `/api/v1/products/{id}/vote`         | Usuário             | 201 `VoteDTO`                                            | 400, 401, 403, 404 `PRODUCT_NOT_FOUND`, 409 `ALREADY_VOTED`, 422 `PRODUCT_NOT_VOTABLE` |
 | DELETE | `/api/v1/products/{id}/vote`         | Usuário             | 200 `VoteDTO`                                            | 400, 401, 403, 404 `VOTE_NOT_FOUND`                                                    |
 | POST   | `/api/v1/products/{id}/visit`        | Público             | 204                                                      | 400, 403, 404 `PRODUCT_NOT_FOUND`                                                      |
@@ -117,6 +118,8 @@ Sucesso: `{ "data": ... }`. Erro: `{ "error": { "code", "message", "details" } }
 | GET    | `/api/health`                        | Público             | 200 `{ status, database }`                               | 503 `DATABASE_UNAVAILABLE`                                                             |
 
 - **Lista principal**: produtos `LAUNCHED`, por votos (no empate, os mais recentes primeiro), sem paginação. Com sessão, `viewerHasVoted` marca os produtos em que o usuário votou.
+- **Filtro por topic**: `?topic=slug` deixa na lista principal só os produtos daquele topic, na mesma ordem. Um topic por vez: repetido (`?topic=a&topic=b`) ou fora do formato de slug dá 400; slug fora dos 5 do seed dá 404 `TOPIC_NOT_FOUND`; vazio é o mesmo que sem filtro.
+- **Topics**: os 5 do seed, em ordem alfabética, cada um com `productCount`, que conta só os produtos `LAUNCHED` (o mesmo que o filtro mostra). Sem cache.
 - **Voto**: toggle (a interface manda POST com o botão inativo e DELETE com ele ativo). Votar é uma transação (INSERT do voto + `upvotes + 1`); o UNIQUE `(user_id, product_id)` barra o repetido, mesmo com cliques simultâneos (`P2002` → 409). Remover tira 1 de `upvotes`, que nunca fica negativo. Produto `UPCOMING` não recebe voto.
 - **Voto na tela**: o botão atualiza na hora (otimista) e volta se a API falhar. A lista não se reordena depois do voto; a nova posição aparece no próximo carregamento. Visitante vai para o login e volta para a página onde estava.
 - **Visita**: cada clique soma 1 em `visits`, de qualquer perfil e sem deduplicar. Sem corpo, para funcionar com `navigator.sendBeacon` (com `fetch` + `keepalive` de reserva); o link abre mesmo se o registro falhar. Visitas só são exibidas: nunca entram na ordenação.

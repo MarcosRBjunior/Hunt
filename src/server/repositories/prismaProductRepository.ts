@@ -65,9 +65,13 @@ export class PrismaProductRepository implements ProductRepository {
     this.prisma = prisma;
   }
 
-  async listLaunched(): Promise<Product[]> {
+  async listLaunched(topic?: TopicSlug): Promise<Product[]> {
     const rows = await this.prisma.product.findMany({
-      where: { status: "LAUNCHED" },
+      where: {
+        status: "LAUNCHED",
+        // Filtra pelo vínculo; o `include` continua trazendo todas as tags.
+        ...(topic && { topics: { some: { topic: { slug: topic } } } }),
+      },
       orderBy: [{ upvotes: "desc" }, { createdAt: "desc" }],
       include: productInclude,
     });

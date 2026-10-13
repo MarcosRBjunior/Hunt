@@ -57,6 +57,72 @@ export function describeProductRepositoryContract(
       expect(products).toHaveLength(60);
     });
 
+    it("TC-13: com topic, só os produtos lançados dele, por votos", async () => {
+      const saas = { slug: "saas", name: "SaaS" };
+      const tech = { slug: "tech", name: "Tech" };
+      const repository = await setup([
+        buildProduct({ title: "SaaS 10", upvotes: 10, topics: [saas] }),
+        buildProduct({ title: "Tech 50", upvotes: 50, topics: [tech] }),
+        buildProduct({
+          title: "SaaS e Tech 30",
+          upvotes: 30,
+          topics: [tech, saas],
+        }),
+        buildProduct({ title: "Sem topic", upvotes: 70, topics: [] }),
+        buildProduct({
+          title: "SaaS em breve",
+          status: "UPCOMING",
+          upvotes: 99,
+          topics: [saas],
+        }),
+      ]);
+
+      const products = await repository.listLaunched("saas");
+
+      expect(products.map((product) => product.title)).toEqual([
+        "SaaS e Tech 30",
+        "SaaS 10",
+      ]);
+      // O filtro não corta as outras tags do produto.
+      expect(products[0]?.topics.map((topic) => topic.slug)).toEqual([
+        "saas",
+        "tech",
+      ]);
+    });
+
+    it("com topic, no empate de votos, o mais recente vem primeiro", async () => {
+      const saas = [{ slug: "saas", name: "SaaS" }];
+      const repository = await setup([
+        buildProduct({
+          title: "Antigo",
+          upvotes: 5,
+          topics: saas,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        }),
+        buildProduct({
+          title: "Recente",
+          upvotes: 5,
+          topics: saas,
+          createdAt: new Date("2026-02-01T00:00:00.000Z"),
+        }),
+      ]);
+
+      const products = await repository.listLaunched("saas");
+
+      expect(products.map((product) => product.title)).toEqual([
+        "Recente",
+        "Antigo",
+      ]);
+    });
+
+    it("com topic sem produtos, devolve lista vazia", async () => {
+      const repository = await setup([
+        buildProduct({ topics: [{ slug: "tech", name: "Tech" }] }),
+      ]);
+
+      expect(await repository.listLaunched("marketing")).toEqual([]);
+    });
+
     it("devolve as tags de cada produto em ordem alfabética pelo nome", async () => {
       const repository = await setup([
         buildProduct({
