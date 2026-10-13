@@ -3,6 +3,8 @@ import { sortTopicsByName, type TopicSlug } from "@/lib/topics";
 
 import { isPrismaError } from "./prismaErrors";
 import type {
+  AdminProduct,
+  EditorialReview,
   NewProduct,
   Product,
   ProductChanges,
@@ -43,6 +45,10 @@ function toProduct(row: ProductRow): Product {
 /** Liga o produto aos topics do seed pelo slug. */
 function connectTopics(slugs: readonly TopicSlug[]) {
   return slugs.map((slug) => ({ topic: { connect: { slug } } }));
+}
+
+function toAdminProduct({ review, ...row }: ReviewedProductRow): AdminProduct {
+  return { ...toProduct(row), review };
 }
 
 function toReviewedProducts(rows: ReviewedProductRow[]): ReviewedProduct[] {
@@ -90,13 +96,13 @@ export class PrismaProductRepository implements ProductRepository {
     return rows.map(toProduct);
   }
 
-  async listAll(): Promise<Product[]> {
+  async listAll(): Promise<AdminProduct[]> {
     const rows = await this.prisma.product.findMany({
       orderBy: { createdAt: "desc" },
-      include: productInclude,
+      include: reviewedProductInclude,
     });
 
-    return rows.map(toProduct);
+    return rows.map(toAdminProduct);
   }
 
   async findById(id: string): Promise<Product | null> {
@@ -106,6 +112,15 @@ export class PrismaProductRepository implements ProductRepository {
     });
 
     return row ? toProduct(row) : null;
+  }
+
+  async findWithReview(id: string): Promise<AdminProduct | null> {
+    const row = await this.prisma.product.findUnique({
+      where: { id },
+      include: reviewedProductInclude,
+    });
+
+    return row ? toAdminProduct(row) : null;
   }
 
   async create({ topicSlugs, ...fields }: NewProduct): Promise<Product> {
@@ -154,5 +169,24 @@ export class PrismaProductRepository implements ProductRepository {
       data: { visits: { increment: 1 } },
     });
     return count > 0;
+  }
+
+  async upsertReview(
+    productId: string,
+    { rating, summary }: EditorialReview,
+  ): Promise<EditorialReview | null> {
+    try {
+      // `product_id` é UNIQUE: no máximo uma revisão por produto.
+      return await this.prisma.editorialReview.upsert({
+        where: { productId },
+        create: { productId, rating, summary },
+        update: { rating, summary },
+        select: { rating: true, summary: true },
+      });
+    } catch (error) {
+      // Produto inexistente (ou apagado no meio): a FK recusa a revisão.
+      if (isPrismaError(error, "P2003")) return null;
+      throw error;
+    }
   }
 }

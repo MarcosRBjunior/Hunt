@@ -8,8 +8,8 @@ const postgresUrl = z.preprocess(
 
 /**
  * Variáveis de ambiente validadas na inicialização. O schema cresce por fase:
- * banco entrou na Fase 4, o Clerk na Fase 6 e o webhook entra na Fase 9
- * (ver `.env.example`).
+ * banco entrou na Fase 4, o Clerk na Fase 6 e o webhook na Fase 9 (ver
+ * `.env.example`).
  */
 const envSchema = z
   .object({
@@ -35,6 +35,10 @@ const envSchema = z
     // Rotas das páginas de login e registro (src/app/sign-in e sign-up).
     NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.literal("/sign-in"),
     NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.literal("/sign-up"),
+    // Webhooks do Clerk (user.deleted): segredo do endpoint no dashboard.
+    CLERK_WEBHOOK_SIGNING_SECRET: z
+      .string()
+      .regex(/^whsec_\S+$/, "esperado whsec_..."),
   })
   .refine(
     (env) => env.PRODUCT_SOURCE !== "prisma" || env.DATABASE_URL !== undefined,

@@ -1,8 +1,9 @@
 import { ProductLogo } from "@/components/products/ProductLogo";
+import { Rating } from "@/components/sidebar/Rating";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn, formatNumber } from "@/lib/utils";
-import type { ProductDTO, ProductStatus } from "@/types/api";
+import type { AdminProductDTO, ProductStatus } from "@/types/api";
 
 import { DeleteProductButton } from "./DeleteProductButton";
 
@@ -25,11 +26,12 @@ const dateFormat = new Intl.DateTimeFormat("pt-BR", {
 
 const cell = "px-4 py-3 align-middle";
 
-/**
- * Produtos da área admin, de qualquer status. A coluna "nota" entra com as
- * revisões (Fase 9).
- */
-export function AdminProductTable({ products }: { products: ProductDTO[] }) {
+/** Produtos da área admin, de qualquer status, com a nota da revisão. */
+export function AdminProductTable({
+  products,
+}: {
+  products: AdminProductDTO[];
+}) {
   if (products.length === 0) {
     return (
       <div className="mt-[22px]">
@@ -48,7 +50,7 @@ export function AdminProductTable({ products }: { products: ProductDTO[] }) {
 
   return (
     <div className="mt-[22px] overflow-x-auto rounded-lg border border-line">
-      <table className="w-full min-w-[820px] border-collapse text-left text-body text-ink-muted">
+      <table className="w-full min-w-[920px] border-collapse text-left text-body text-ink-muted">
         <caption className="sr-only">Produtos cadastrados</caption>
         <thead className="bg-surface-subtle text-caption font-extrabold tracking-[0.6px] text-ink-subtle uppercase">
           <tr>
@@ -66,6 +68,9 @@ export function AdminProductTable({ products }: { products: ProductDTO[] }) {
             </th>
             <th scope="col" className={cell}>
               Topics
+            </th>
+            <th scope="col" className={cell}>
+              Nota
             </th>
             <th scope="col" className={cell}>
               Criado em
@@ -106,6 +111,13 @@ export function AdminProductTable({ products }: { products: ProductDTO[] }) {
                 {product.topics.length > 0
                   ? product.topics.map((topic) => topic.name).join(", ")
                   : "—"}
+              </td>
+              <td className={cn(cell, "whitespace-nowrap")}>
+                {product.review ? (
+                  <Rating value={product.review.rating} />
+                ) : (
+                  "—"
+                )}
               </td>
               <td className={cn(cell, "whitespace-nowrap")}>
                 <time dateTime={product.createdAt}>

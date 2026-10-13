@@ -201,17 +201,19 @@ describe("productFormSchema", () => {
         ...validBody,
         logoUrl: null,
         status: "UPCOMING",
+        topicSlugs: ["tech"],
         upvotes: 500,
       }),
-    ).toEqual({ ...validBody, logoUrl: null });
+    ).toEqual({ ...validBody, logoUrl: null, status: "UPCOMING" });
   });
 
-  it("exige os quatro campos, com logo nulo quando não há", () => {
+  it("exige os cinco campos, com logo nulo quando não há", () => {
     expect(fieldErrors(productFormSchema.safeParse({}))).toEqual([
       "title",
       "description",
       "url",
       "logoUrl",
+      "status",
     ]);
   });
 });

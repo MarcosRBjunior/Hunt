@@ -75,6 +75,7 @@ describe("ProductForm", () => {
       description: "A API visual que conecta suas ferramentas.",
       url: "https://layer.example.com",
       logoUrl: null,
+      status: "LAUNCHED",
     });
     expect(mockRouter.push).toHaveBeenCalledWith("/admin/produtos");
     expect(mockRouter.refresh).toHaveBeenCalled();
@@ -151,7 +152,7 @@ describe("ProductForm", () => {
     ).toBe(false);
   });
 
-  it("na edição, começa preenchido e salva com PATCH só os campos do formulário", async () => {
+  it("na edição, começa preenchido (status incluído) e salva com PATCH sem os topics", async () => {
     const product = buildProductDTO({
       logoUrl: "https://example.com/logo.png",
       status: "UPCOMING",
@@ -160,6 +161,9 @@ describe("ProductForm", () => {
     render(<ProductForm product={product} />);
 
     expect(field("Nome").value).toBe("Layer");
+    expect((screen.getByLabelText("Status") as HTMLSelectElement).value).toBe(
+      "UPCOMING",
+    );
     type("Endereço do logo (opcional)", "");
     await submit("Salvar alterações");
 
@@ -167,13 +171,27 @@ describe("ProductForm", () => {
       `/api/v1/admin/products/${product.id}`,
       expect.objectContaining({ method: "PATCH" }),
     );
-    // Status e topics não vão no body: ficam como estão.
+    // Os topics não vão no body: ficam como estão.
     expect(sentBody(fetch)).toEqual({
       title: "Layer",
       description: product.description,
       url: product.url,
       logoUrl: null,
+      status: "UPCOMING",
     });
+  });
+
+  it("cadastra como Em breve quando o status é trocado", async () => {
+    const fetch = respondWith(201, { data: buildProductDTO() });
+    render(<ProductForm />);
+
+    fillValid();
+    fireEvent.change(screen.getByLabelText("Status"), {
+      target: { value: "UPCOMING" },
+    });
+    await submit();
+
+    expect(sentBody(fetch)).toMatchObject({ status: "UPCOMING" });
   });
 
   it("mostra a prévia do logo depois de uma pausa na digitação", () => {

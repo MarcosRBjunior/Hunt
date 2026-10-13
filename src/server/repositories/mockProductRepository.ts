@@ -5,6 +5,7 @@ import { httpUrlSchema } from "@/lib/validation/common";
 import rawProducts from "@/mocks/products.json";
 
 import type {
+  AdminProduct,
   EditorialReview,
   Product,
   ProductRepository,
@@ -58,6 +59,10 @@ function toProduct({ review, ...product }: MockProductRecord): Product {
   return { ...product, topics: sortTopicsByName(product.topics) };
 }
 
+function toAdminProduct(record: MockProductRecord): AdminProduct {
+  return { ...toProduct(record), review: record.review };
+}
+
 function hasReview(
   record: MockProductRecord,
 ): record is MockProductRecord & ReviewedProduct {
@@ -97,13 +102,18 @@ export class MockProductRepository implements ProductRepository {
       .toSorted(newestFirst);
   }
 
-  async listAll(): Promise<Product[]> {
-    return this.records.map(toProduct).toSorted(newestFirst);
+  async listAll(): Promise<AdminProduct[]> {
+    return this.records.map(toAdminProduct).toSorted(newestFirst);
   }
 
   async findById(id: string): Promise<Product | null> {
     const record = this.records.find((candidate) => candidate.id === id);
     return record ? toProduct(record) : null;
+  }
+
+  async findWithReview(id: string): Promise<AdminProduct | null> {
+    const record = this.records.find((candidate) => candidate.id === id);
+    return record ? toAdminProduct(record) : null;
   }
 
   async create(): Promise<Product> {
@@ -119,6 +129,10 @@ export class MockProductRepository implements ProductRepository {
   }
 
   async incrementVisits(): Promise<boolean> {
+    throw new ReadOnlySourceError();
+  }
+
+  async upsertReview(): Promise<EditorialReview | null> {
     throw new ReadOnlySourceError();
   }
 }

@@ -47,7 +47,7 @@ A aplicação sobe em http://localhost:3000. Se faltar alguma variável de ambie
 
 ## Variáveis de ambiente
 
-Todas ficam em `.env.example` e são validadas com Zod em `src/server/env.ts`. O schema cresce por fase: hoje exige `PRODUCT_SOURCE` (`mock` ou `prisma`) e `LOG_LEVEL`, e `DATABASE_URL` passa a ser obrigatória com `PRODUCT_SOURCE=prisma`. `DIRECT_URL` só é usada com pooler (o CLI do Prisma conecta direto). As do Clerk (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` e as rotas `/sign-in` e `/sign-up`) são obrigatórias; o CI usa chaves fictícias em formato válido, porque nem o build nem os testes falam com o Clerk.
+Todas ficam em `.env.example` e são validadas com Zod em `src/server/env.ts`. O schema cresce por fase: hoje exige `PRODUCT_SOURCE` (`mock` ou `prisma`) e `LOG_LEVEL`, e `DATABASE_URL` passa a ser obrigatória com `PRODUCT_SOURCE=prisma`. `DIRECT_URL` só é usada com pooler (o CLI do Prisma conecta direto). As do Clerk (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, as rotas `/sign-in` e `/sign-up` e `CLERK_WEBHOOK_SIGNING_SECRET`, o segredo do endpoint do webhook) são obrigatórias; o CI usa valores fictícios em formato válido, porque nem o build nem os testes falam com o Clerk (os testes do webhook assinam os eventos com o segredo fictício). Localmente o Clerk não alcança o `localhost`, então o `.env.local` também pode ficar com um segredo fictício.
 
 O Prisma 7 não lê `.env*` sozinho: o `prisma.config.ts` e o seed carregam os mesmos arquivos que o Next via `@next/env`.
 
@@ -98,22 +98,31 @@ No Railway, a URL é a `DATABASE_PUBLIC_URL` do serviço Postgres (a `DATABASE_U
 
 Sucesso: `{ "data": ... }`. Erro: `{ "error": { "code", "message", "details" } }`; em erros de validação, `details.fields` traz as mensagens por campo. Toda resposta tem `x-request-id`, o mesmo id da linha de log (JSON, via pino) daquela requisição.
 
-| Método | Rota                          | Acesso  | Sucesso                              | Erros                                                                                  |
-| ------ | ----------------------------- | ------- | ------------------------------------ | -------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/products`            | Público | 200 `ProductDTO[]`                   | —                                                                                      |
-| POST   | `/api/v1/products/{id}/vote`  | Usuário | 201 `VoteDTO`                        | 400, 401, 403, 404 `PRODUCT_NOT_FOUND`, 409 `ALREADY_VOTED`, 422 `PRODUCT_NOT_VOTABLE` |
-| DELETE | `/api/v1/products/{id}/vote`  | Usuário | 200 `VoteDTO`                        | 400, 401, 403, 404 `VOTE_NOT_FOUND`                                                    |
-| POST   | `/api/v1/products/{id}/visit` | Público | 204                                  | 400, 403, 404 `PRODUCT_NOT_FOUND`                                                      |
-| GET    | `/api/v1/admin/products`      | Admin   | 200 `ProductDTO[]` (todos os status) | 401, 403                                                                               |
-| POST   | `/api/v1/admin/products`      | Admin   | 201 `ProductDTO`                     | 400, 401, 403                                                                          |
-| PATCH  | `/api/v1/admin/products/{id}` | Admin   | 200 `ProductDTO`                     | 400, 401, 403, 404 `PRODUCT_NOT_FOUND`                                                 |
-| DELETE | `/api/v1/admin/products/{id}` | Admin   | 204                                  | 401, 403, 404 `PRODUCT_NOT_FOUND`                                                      |
+| Método | Rota                                 | Acesso              | Sucesso                                                  | Erros                                                                                  |
+| ------ | ------------------------------------ | ------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/products`                   | Público             | 200 `ProductDTO[]`                                       | —                                                                                      |
+| GET    | `/api/v1/products/reviewed?limit=3`  | Público             | 200 `ReviewedProductDTO[]`                               | —                                                                                      |
+| GET    | `/api/v1/products/upcoming`          | Público             | 200 `ProductDTO[]`                                       | —                                                                                      |
+| POST   | `/api/v1/products/{id}/vote`         | Usuário             | 201 `VoteDTO`                                            | 400, 401, 403, 404 `PRODUCT_NOT_FOUND`, 409 `ALREADY_VOTED`, 422 `PRODUCT_NOT_VOTABLE` |
+| DELETE | `/api/v1/products/{id}/vote`         | Usuário             | 200 `VoteDTO`                                            | 400, 401, 403, 404 `VOTE_NOT_FOUND`                                                    |
+| POST   | `/api/v1/products/{id}/visit`        | Público             | 204                                                      | 400, 403, 404 `PRODUCT_NOT_FOUND`                                                      |
+| GET    | `/api/v1/admin/products`             | Admin               | 200 `AdminProductDTO[]` (todos os status, com a revisão) | 401, 403                                                                               |
+| POST   | `/api/v1/admin/products`             | Admin               | 201 `ProductDTO`                                         | 400, 401, 403                                                                          |
+| PATCH  | `/api/v1/admin/products/{id}`        | Admin               | 200 `ProductDTO`                                         | 400, 401, 403, 404 `PRODUCT_NOT_FOUND`                                                 |
+| DELETE | `/api/v1/admin/products/{id}`        | Admin               | 204                                                      | 401, 403, 404 `PRODUCT_NOT_FOUND`                                                      |
+| PUT    | `/api/v1/admin/products/{id}/review` | Admin               | 200 `ReviewDTO`                                          | 400, 401, 403, 404 `PRODUCT_NOT_FOUND`                                                 |
+| POST   | `/api/webhooks/clerk`                | Assinatura do Clerk | 200                                                      | 400 `INVALID_WEBHOOK_SIGNATURE`                                                        |
+| GET    | `/api/health`                        | Público             | 200 `{ status, database }`                               | 503 `DATABASE_UNAVAILABLE`                                                             |
 
 - **Lista principal**: produtos `LAUNCHED`, por votos (no empate, os mais recentes primeiro), sem paginação. Com sessão, `viewerHasVoted` marca os produtos em que o usuário votou.
 - **Voto**: toggle (a interface manda POST com o botão inativo e DELETE com ele ativo). Votar é uma transação (INSERT do voto + `upvotes + 1`); o UNIQUE `(user_id, product_id)` barra o repetido, mesmo com cliques simultâneos (`P2002` → 409). Remover tira 1 de `upvotes`, que nunca fica negativo. Produto `UPCOMING` não recebe voto.
 - **Voto na tela**: o botão atualiza na hora (otimista) e volta se a API falhar. A lista não se reordena depois do voto; a nova posição aparece no próximo carregamento. Visitante vai para o login e volta para a página onde estava.
 - **Visita**: cada clique soma 1 em `visits`, de qualquer perfil e sem deduplicar. Sem corpo, para funcionar com `navigator.sendBeacon` (com `fetch` + `keepalive` de reserva); o link abre mesmo se o registro falhar. Visitas só são exibidas: nunca entram na ordenação.
 - **Admin**: body `{ title (1–80), description (1–500), url, logoUrl?, status?, topicSlugs? }`. `url` e `logoUrl` só http(s); `topicSlugs` só os 5 do seed, sem repetição. No PATCH tudo é opcional e `topicSlugs` substitui a lista inteira. `upvotes` e `visits` no body são ignorados. Remover um produto apaga em cascata votos, topics e revisão.
+- **Revisados**: produtos com revisão do admin (nota de 1 a 5 e resumo opcional de até 280 caracteres), da maior nota para a menor; no empate, o mais recente primeiro. `?limit=` vai de 1 a 10 (padrão 3, que é o que a lateral mostra); valor inválido vira 3, sem erro. O `PUT` cria ou substitui a revisão; não há remoção (ela some junto com o produto).
+- **Em breve**: produtos `UPCOMING`, do mais recente para o mais antigo. Ficam fora da lista principal e não recebem voto.
+- **Webhook do Clerk**: a assinatura (Svix) é conferida antes de tudo; sem ela, ou com ela errada, a resposta é 400 e nada é gravado. É a única escrita sem checagem de `Origin`, porque quem chama é o servidor do Clerk. Só `user.deleted` faz algo: numa transação, trava o usuário, desconta 1 de `upvotes` em cada produto que ele votou e o apaga (os votos vão em cascata). Reenvio do mesmo evento responde 200 sem mudar nada; outros eventos são ignorados.
+- **Health**: `SELECT 1` no banco; com `PRODUCT_SOURCE=mock` o banco nem é consultado (`database: "skipped"`). Resposta sem cache.
 - **Reconciliação**: se `upvotes` divergir de `count(votes)`, `npm run db:reconcile` corrige (só mexe nos que divergiram e trava novos votos enquanto conta).
 
 A fonte dos dados depende de `PRODUCT_SOURCE` (veja [Banco de dados](#banco-de-dados)). Com `mock`, a API é só leitura: votos, visitas e admin precisam de `PRODUCT_SOURCE=prisma`.

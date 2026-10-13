@@ -166,6 +166,27 @@ export function describeProductRepositoryContract(
       expect(found).not.toHaveProperty("review");
     });
 
+    it("findWithReview: devolve o produto com a revisão, ou review null", async () => {
+      const reviewed = buildProduct({
+        title: "Revisado",
+        review: { rating: 4, summary: "Bom" },
+      });
+      const plain = buildProduct({ title: "Sem revisão" });
+      const repository = await setup([reviewed, plain]);
+
+      expect(await repository.findWithReview(reviewed.id)).toMatchObject({
+        title: "Revisado",
+        review: { rating: 4, summary: "Bom" },
+      });
+      expect(await repository.findWithReview(plain.id)).toMatchObject({
+        title: "Sem revisão",
+        review: null,
+      });
+      expect(
+        await repository.findWithReview("00000000-0000-4000-8000-000000000000"),
+      ).toBeNull();
+    });
+
     it("findById: devolve null para id inexistente", async () => {
       const repository = await setup([buildProduct()]);
 
@@ -193,6 +214,8 @@ export function describeProductRepositoryContract(
       ]);
 
       const products = await repository.listAll();
+
+      expect(products.every((product) => product.review === null)).toBe(true);
 
       expect(products.map((product) => product.title)).toEqual([
         "Em breve",

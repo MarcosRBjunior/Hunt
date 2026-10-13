@@ -7,6 +7,7 @@ import {
   ProductFormSkeleton,
 } from "@/components/admin/AdminSkeletons";
 import { ProductForm } from "@/components/admin/ProductForm";
+import { ReviewForm } from "@/components/admin/ReviewForm";
 import { PageShell } from "@/components/layout/PageShell";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { requireAdminPage } from "@/server/auth";
@@ -60,6 +61,22 @@ async function EditProduct({ params }: { params: Promise<{ id: string }> }) {
         title={`Editar ${product.title}`}
       />
       <ProductForm product={product} />
+
+      <section
+        aria-labelledby="revisao"
+        className="mt-12 border-t border-line pt-9"
+      >
+        <SectionHeading
+          id="revisao"
+          eyebrow="Escolha da equipe"
+          title="Revisão"
+        />
+        <p className="mt-3 max-w-xl text-nav text-ink-subtle">
+          Produtos revisados aparecem em &ldquo;Produtos revisados por
+          nós&rdquo;, na lateral da home: até 3, da maior nota para a menor.
+        </p>
+        <ReviewForm productId={product.id} review={product.review} />
+      </section>
     </>
   );
 }

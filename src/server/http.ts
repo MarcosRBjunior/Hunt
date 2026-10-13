@@ -89,6 +89,14 @@ type Dependencies = {
   generateRequestId?: () => string;
 };
 
+type Options = {
+  /**
+   * Confere o `Origin` das escritas (padrão). Só o webhook do Clerk desliga:
+   * quem chama é o servidor do Clerk, e a garantia é a assinatura.
+   */
+  checkOrigin?: boolean;
+};
+
 export function createErrorHandling({
   logger,
   generateRequestId = randomUUID,
@@ -98,7 +106,10 @@ export function createErrorHandling({
    * `AppError` no formato de erro da API (qualquer outro erro vira 500
    * genérico) e grava uma linha de log JSON por requisição.
    */
-  return function withErrorHandling<Context>(handler: Handler<Context>) {
+  return function withErrorHandling<Context>(
+    handler: Handler<Context>,
+    { checkOrigin = true }: Options = {},
+  ) {
     return async (request: Request, context: Context): Promise<Response> => {
       const startedAt = performance.now();
       const requestId = generateRequestId();
@@ -108,7 +119,9 @@ export function createErrorHandling({
       let unexpected: unknown;
 
       try {
-        if (WRITE_METHODS.has(request.method)) assertSameOrigin(request);
+        if (checkOrigin && WRITE_METHODS.has(request.method)) {
+          assertSameOrigin(request);
+        }
         response = await handler(request, context, log);
       } catch (error) {
         if (error instanceof AppError) {

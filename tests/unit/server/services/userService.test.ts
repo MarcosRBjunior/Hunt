@@ -9,9 +9,16 @@ function serviceWithRepository() {
     externalId,
   }));
 
+  const deleteByExternalId = vi.fn(
+    async (): Promise<{ votesRemoved: number } | null> => ({ votesRemoved: 2 }),
+  );
+
   return {
-    service: createUserService({ userRepository: { upsertByExternalId } }),
+    service: createUserService({
+      userRepository: { upsertByExternalId, deleteByExternalId },
+    }),
     upsertByExternalId,
+    deleteByExternalId,
   };
 }
 
@@ -32,5 +39,36 @@ describe("userService.ensureUser", () => {
       ValidationError,
     );
     expect(upsertByExternalId).not.toHaveBeenCalled();
+  });
+});
+
+describe("userService.removeDeletedUser", () => {
+  it("apaga o usuário local e conta os votos descontados", async () => {
+    const { service, deleteByExternalId } = serviceWithRepository();
+
+    expect(await service.removeDeletedUser("user_1")).toEqual({
+      removed: true,
+      votesRemoved: 2,
+    });
+    expect(deleteByExternalId).toHaveBeenCalledWith("user_1");
+  });
+
+  it("evento repetido (usuário já apagado) não muda nada", async () => {
+    const { service, deleteByExternalId } = serviceWithRepository();
+    deleteByExternalId.mockResolvedValueOnce(null);
+
+    expect(await service.removeDeletedUser("user_1")).toEqual({
+      removed: false,
+      votesRemoved: 0,
+    });
+  });
+
+  it("recusa id externo vazio", async () => {
+    const { service, deleteByExternalId } = serviceWithRepository();
+
+    await expect(service.removeDeletedUser(" ")).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    expect(deleteByExternalId).not.toHaveBeenCalled();
   });
 });
