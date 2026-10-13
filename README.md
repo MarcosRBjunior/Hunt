@@ -2,7 +2,7 @@
 
 Vitrine pública de produtos de startups, ordenada por upvotes. Visitantes navegam e filtram por trending topics, usuários logados votam e um admin cadastra os produtos. Projeto 06 do portfólio, inspirado no Product Hunt.
 
-> No ar em https://hunt-flame-nine.vercel.app (nível 2, o MVP). O nível 3 está em construção; o andamento por fase está em [Etapas](#etapas).
+> No ar em https://hunt-flame-nine.vercel.app, com os 3 níveis entregues ([Etapas](#etapas)). Falta o fechamento: medição de desempenho com 1.000 produtos e README final com prints.
 
 ## Stack
 
@@ -193,7 +193,7 @@ As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](
 | ------- | -------------------------------------------------------- | -------------------- |
 | 1       | Layout + listagem vinda de API mock                      | Concluído (`v1.0.0`) |
 | 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | Concluído (`v2.0.0`) |
-| 3       | Filtro por trending topics                               | Em andamento         |
+| 3       | Filtro por trending topics                               | Concluído (`v3.0.0`) |
 
 ## Fluxo de trabalho
 
