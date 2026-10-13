@@ -6,7 +6,7 @@ Vitrine pública de produtos de startups, ordenada por upvotes. Visitantes naveg
 
 ## Stack
 
-Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS 4 · Prisma 7 + PostgreSQL · Clerk · Zod · pino · Vitest. Na Fase 9 entra o Playwright. Deploy na Vercel, com o banco de produção no Railway.
+Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS 4 · Prisma 7 + PostgreSQL · Clerk · Zod · pino · Vitest + Testing Library · Playwright. Deploy na Vercel, com o banco de produção no Railway.
 
 ## Como rodar
 
@@ -38,6 +38,7 @@ A aplicação sobe em http://localhost:3000. Se faltar alguma variável de ambie
 | `npm test`                        | Testes (Vitest)                                               |
 | `npm run test:coverage`           | Testes com cobertura (mínimo de 80% em `src/server/services`) |
 | `npm run test:integration`        | Testes de integração no Postgres (precisa do `npm run db:up`) |
+| `npm run test:e2e`                | Testes E2E no navegador (veja [Testes E2E](#testes-e2e))      |
 | `npm run db:up` / `db:down`       | Sobe / derruba o Postgres do `docker-compose.yml`             |
 | `npm run db:migrate`              | Cria e aplica migrations em desenvolvimento                   |
 | `npm run db:deploy`               | Aplica as migrations pendentes (sem criar novas)              |
@@ -65,16 +66,17 @@ O seed (`prisma/seed.ts`) roda quantas vezes for preciso sem duplicar nada:
 - **sempre** cria os 5 topics fixos (`ia`, `produtividade`, `marketing`, `saas`, `tech`);
 - **com `SEED_DEMO=true`** cria os produtos de `src/mocks/products.json` (mesmos ids), com topics, revisões, 298 usuários fictícios (`seed_demo_user_0001`, ...) e 631 votos, mantendo `upvotes = count(votes)`.
 
-Em produção (Railway) a variável fica vazia e o banco começa só com os topics. As migrations de produção rodam num job do GitHub no merge na `main` (Fase 9), nunca no build da Vercel.
+Em produção (Railway) a variável fica vazia e o banco começa só com os topics. As migrations de produção rodam no workflow `.github/workflows/migrate.yml` a cada push na `main` (e à mão, na aba Actions), nunca no build da Vercel, que também roda nos previews. A URL do banco fica no segredo `PRODUCTION_DATABASE_URL` do environment `production` do GitHub. A conexão com o Railway às vezes trava, então são até 3 tentativas com limite de tempo.
 
 ### Ambientes
 
-| Ambiente        | `PRODUCT_SOURCE`      | Banco                                            |
-| --------------- | --------------------- | ------------------------------------------------ |
-| Local           | `mock` ou `prisma`    | `hunt` no Docker (com a demo)                    |
-| Testes          | —                     | `hunt_test` no Docker (criado e migrado sozinho) |
-| Preview Vercel  | `prisma`              | `hunt_preview` no Railway (com a demo)           |
-| Produção Vercel | `mock` até a `v2.0.0` | `railway` no Railway (só os topics)              |
+| Ambiente        | `PRODUCT_SOURCE`      | Banco                                                      |
+| --------------- | --------------------- | ---------------------------------------------------------- |
+| Local           | `mock` ou `prisma`    | `hunt` no Docker (com a demo)                              |
+| Testes          | —                     | `hunt_test` no Docker (criado e migrado sozinho)           |
+| E2E             | `prisma`              | `hunt_e2e` no Docker (zerado, com a demo, a cada execução) |
+| Preview Vercel  | `prisma`              | `hunt_preview` no Railway (com a demo)                     |
+| Produção Vercel | `mock` até a `v2.0.0` | `railway` no Railway (só os topics)                        |
 
 Os testes de integração (`tests/integration/`) rodam o mesmo contrato do mock contra o Postgres. Por segurança, eles só aceitam um banco cujo nome termina em `_test`, porque apagam as tabelas entre um teste e outro. No CI, o Postgres sobe como service container.
 
@@ -88,7 +90,7 @@ No Railway, a URL é a `DATABASE_PUBLIC_URL` do serviço Postgres (a `DATABASE_U
   - `requireUser()`: 401 sem sessão; cria o usuário local (por `external_id`) na primeira ação autenticada, sem duplicar mesmo com cliques simultâneos;
   - `requireAdmin()`: 401 sem sessão, 403 sem papel de admin;
   - `requireAdminPage()`: para as páginas de `/admin`; sem sessão vai para o login (e volta para a página pedida), sem papel de admin vai para `/acesso-negado`.
-- **Área admin** em `/admin/produtos`: tabela com todos os produtos, cadastro, edição e remoção (com confirmação). O formulário tem nome, descrição, site e logo; status e topics entram nas Fases 9 e 10. O link "Admin" do header só aparece para admin, mas é só atalho: páginas e API conferem o papel de novo no servidor.
+- **Área admin** em `/admin/produtos`: tabela com todos os produtos, cadastro, edição e remoção (com confirmação). O formulário tem nome, descrição, site, logo e status (topics entram na Fase 10); a página de edição também tem a revisão (nota de 1 a 5 e resumo). O link "Admin" do header só aparece para admin, mas é só atalho: páginas e API conferem o papel de novo no servidor.
 - **Admin** é quem tem `{"role": "admin"}` no _Public metadata_ do usuário no Clerk. O papel chega ao servidor pelo token de sessão, com esta customização em **Sessions › Customize session token**: `{"metadata": "{{user.public_metadata}}"}`. O `unsafeMetadata` (editável pelo próprio usuário) nunca é usado.
 - **Escritas** (POST/PATCH/PUT/DELETE) só passam com o header `Origin` do próprio site (mesmo critério das Server Actions do Next: o host do `Origin` tem de bater com o `x-forwarded-host` ou o `host`). Sem ele, ou de outro site, a resposta é `403 INVALID_ORIGIN`. Escritas com corpo exigem `Content-Type: application/json`.
 - **Entradas** passam pelos schemas Zod de `src/lib/validation` (compartilhados com os formulários): ids são UUID antes de chegar ao banco, `url` e `logoUrl` só aceitam http(s) (o banco tem o mesmo CHECK) e campos fora do schema, como `upvotes` e `visits`, são descartados.
@@ -131,6 +133,19 @@ A fonte dos dados depende de `PRODUCT_SOURCE` (veja [Banco de dados](#banco-de-d
 
 O design system "nova" foi extraído do Figma Make e está em [`docs/design/`](docs/design/DESIGN-SYSTEM.md). Os tokens viraram o `@theme` do Tailwind em `src/app/globals.css`, que é a fonte de verdade no código, com alguns ajustes: fonte mínima de 11px, textos com contraste AA, cinzas consolidados, anel de foco e navegação visível no celular. A lista completa está em [Ajustes aplicados](docs/design/DESIGN-SYSTEM.md#10-ajustes-aplicados-v100).
 
+## Testes E2E
+
+Os testes de `tests/e2e/` (Playwright, só Chromium) cobrem o TC-19 (visitante clica no voto, faz login e vota) e o TC-20 (admin cadastra um produto e ele aparece na home com 0 votos). Cada execução:
+
+1. faz o build e sobe o app na porta 3100 com `PRODUCT_SOURCE=prisma`;
+2. zera o banco `hunt_e2e` e roda o seed da demo (por segurança, só aceita banco com nome terminado em `_e2e`);
+3. garante dois usuários de teste na instância de **desenvolvimento** do Clerk, `e2e-admin+clerk_test@example.com` (com `{"role": "admin"}`) e `e2e-user+clerk_test@example.com`. O sufixo `+clerk_test` marca o e-mail como de teste, e o Clerk nunca manda mensagem para ele;
+4. pega um token de teste do Clerk, que deixa o navegador automatizado passar pela proteção contra bots.
+
+O login nos testes usa o helper `clerk.signIn` do `@clerk/testing`: ele cria um token de login pela API do Clerk, sem senha e sem preencher o formulário (que é do Clerk, não do app). Os testes rodam um por vez, porque gravam votos de verdade.
+
+Localmente, precisa do Postgres (`npm run db:up`), do Chromium do Playwright (`npx playwright install chromium`) e das chaves do Clerk de desenvolvimento no `.env.local` (a preparação recusa uma chave que não comece com `sk_test_`). No CI, o job **E2E** roda depois do job principal, com as chaves nos segredos `CLERK_DEV_PUBLISHABLE_KEY` e `CLERK_DEV_SECRET_KEY` (cadastrados também nos segredos do Dependabot, para os PRs dele). Se falhar, o relatório do Playwright fica nos artefatos da execução.
+
 ## Estrutura
 
 ```
@@ -159,5 +174,5 @@ As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](
 
 - Commits no padrão [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 - Uma branch por nível (`feat/nivel-1-listagem-mock`, ...) e branches curtas por tarefa, com PR e squash merge.
-- O CI (GitHub Actions) roda install → lint → typecheck → `prisma validate` → testes → build → `npm audit` em todo PR.
+- O CI (GitHub Actions) roda install → lint → typecheck → `prisma validate` → testes → build → `npm audit` em todo PR e, depois disso, os testes E2E.
 - A Vercel gera um preview para cada PR.

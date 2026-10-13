@@ -83,3 +83,65 @@ jobs:
       # (hoje há um aviso sem correção em braces, via eslint-config-next).
       - name: Auditoria de dependências
         run: npm audit --omit=dev --audit-level=high
+
+  # TC-19 e TC-20 no navegador, com o Clerk de desenvolvimento de verdade. As
+  # chaves ficam nos segredos do repositório (e nos do Dependabot, para os PRs
+  # dele). PR vindo de fork não recebe segredos, então o job não roda.
+  e2e:
+    name: E2E (Playwright)
+    needs: ci
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      LOG_LEVEL: warn
+      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_DEV_PUBLISHABLE_KEY }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_DEV_SECRET_KEY }}
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+      NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+      # O Clerk não alcança o CI: o segredo do webhook pode ser fictício.
+      CLERK_WEBHOOK_SIGNING_SECRET: whsec_aHVudC10ZXN0LXdlYmhvb2stc2VjcmV0LTMyYnl0ZXM=
+      E2E_DATABASE_URL: postgresql://hunt:hunt@localhost:5432/hunt_e2e
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: hunt
+          POSTGRES_PASSWORD: hunt
+          POSTGRES_DB: hunt_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hunt -d hunt_e2e"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar o Chromium
+        run: npx playwright install --with-deps chromium
+
+      # O Playwright faz o build, sobe o app com PRODUCT_SOURCE=prisma, zera o
+      # banco com a demo e garante os usuários de teste no Clerk.
+      - name: Testes E2E
+        run: npm run test:e2e
+
+      - name: Relatório do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
