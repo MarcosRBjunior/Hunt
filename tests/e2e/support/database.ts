@@ -71,7 +71,8 @@ export async function resetE2eDatabase(): Promise<void> {
   }
 
   execFileSync("npx", ["prisma", "db", "seed"], {
-    env: { ...env, SEED_DEMO: "true" },
+    // Só a demo, mesmo com SEED_BULK=true no .env.local.
+    env: { ...env, SEED_DEMO: "true", SEED_BULK: "false" },
     stdio: "pipe",
   });
 }
