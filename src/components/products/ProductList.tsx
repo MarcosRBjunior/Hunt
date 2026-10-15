@@ -1,8 +1,17 @@
+import { Suspense } from "react";
+
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { ProductDTO, TopicDTO } from "@/types/api";
 
-import { ProductCard } from "./ProductCard";
+import { DeferredProductItems } from "./DeferredProductItems";
+import { ProductItems } from "./ProductItems";
+
+/**
+ * Cards que saem no primeiro pedaço do HTML; o resto vem logo depois, na mesma
+ * resposta (não é paginação: a lista inteira chega sem clique nem rolagem).
+ */
+const FIRST_CHUNK_SIZE = 10;
 
 type ProductListProps = {
   products: ProductDTO[];
@@ -44,13 +53,21 @@ export function ProductList({
     );
   }
 
+  const first = products.slice(0, FIRST_CHUNK_SIZE);
+  const rest = products.slice(FIRST_CHUNK_SIZE);
+
   return (
     <ol aria-label="Produtos" className="mt-[22px] grid gap-2.5">
-      {products.map((product, index) => (
-        <li key={product.id}>
-          <ProductCard product={product} rank={index + 1} signedIn={signedIn} />
-        </li>
-      ))}
+      <ProductItems products={first} firstRank={1} signedIn={signedIn} />
+      {rest.length > 0 && (
+        <Suspense>
+          <DeferredProductItems
+            products={rest}
+            firstRank={FIRST_CHUNK_SIZE + 1}
+            signedIn={signedIn}
+          />
+        </Suspense>
+      )}
     </ol>
   );
 }

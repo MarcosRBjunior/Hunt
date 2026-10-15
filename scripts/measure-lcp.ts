@@ -31,7 +31,8 @@ import { chromium } from "@playwright/test";
  * - `BASE_URL`: padrão http://localhost:3000; `PERF_PATH`: padrão /;
  * - `RUNS`: execuções por combinação, padrão 5;
  * - `PROFILES`: padrão `desktop,mobile`; `VISITS`: padrão `first,returning`;
- * - `VERCEL_AUTOMATION_BYPASS_SECRET`: para medir um preview protegido.
+ * - `VERCEL_AUTOMATION_BYPASS_SECRET`: para medir um preview protegido da
+ *   Vercel. Só mede a 1ª visita (veja `withBypassQuery`).
  */
 
 loadEnvConfig(process.cwd());
@@ -56,6 +57,7 @@ type Metrics = {
 };
 
 type LighthouseReport = {
+  finalDisplayedUrl: string;
   runtimeError?: { code: string; message: string };
   runWarnings?: string[];
   categories: { performance: { score: number | null } };
@@ -100,13 +102,63 @@ function metric(report: LighthouseReport, audit: string): number {
   return value;
 }
 
-/** Cabeçalhos extras do Lighthouse: bypass do preview e cookie da visita. */
-function extraHeaders(cookie: string | null): Record<string, string> {
-  const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-  return {
-    ...(bypass && { "x-vercel-protection-bypass": bypass }),
-    ...(cookie && { cookie }),
-  };
+/**
+ * Tira o segredo de bypass das mensagens do Lighthouse (a URL da 1ª visita o
+ * leva na query). Os relatórios JSON ficam com a URL completa.
+ */
+function redact(text: string): string {
+  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  return secret ? text.replaceAll(secret, "<segredo>") : text;
+}
+
+/** O par `nome=valor` do `Set-Cookie` com esse nome, se houver. */
+function findCookie(response: Response, name: string): string | null {
+  return (
+    response.headers
+      .getSetCookie()
+      .map((header) => header.split(";")[0]!)
+      .find((pair) => pair.startsWith(`${name}=`)) ?? null
+  );
+}
+
+/**
+ * O deploy é protegido pela Vercel e aceita o segredo de bypass? Localmente, ou
+ * sem proteção, a resposta não grava o cookie `_vercel_jwt`.
+ */
+async function isProtectedPreview(url: string): Promise<boolean> {
+  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  if (!secret) return false;
+
+  const response = await fetch(url, {
+    redirect: "manual",
+    headers: {
+      "x-vercel-protection-bypass": secret,
+      "x-vercel-set-bypass-cookie": "true",
+    },
+  });
+  return findCookie(response, "_vercel_jwt") !== null;
+}
+
+/**
+ * URL de um preview protegido: o segredo vai na query, e a Vercel grava o
+ * cookie de bypass no navegador (SameSite=None, para valer também na volta do
+ * handshake do Clerk, que vem de outro site) e redireciona para a URL limpa. É
+ * 1 redirecionamento a mais, que não existe em produção.
+ *
+ * Os outros jeitos falham: o cabeçalho `x-vercel-protection-bypass` iria em
+ * todas as requisições, e o CDN do Clerk recusa cabeçalho desconhecido (CORS);
+ * e um `cookie` mandado como cabeçalho extra some assim que o navegador tem
+ * cookies próprios do site. Por isso a visita de volta (que precisaria de dois
+ * cookies) não é medida num preview protegido.
+ */
+function withBypassQuery(url: string): string {
+  const withBypass = new URL(url);
+  withBypass.searchParams.set(
+    "x-vercel-protection-bypass",
+    process.env.VERCEL_AUTOMATION_BYPASS_SECRET!,
+  );
+  withBypass.searchParams.set("x-vercel-set-bypass-cookie", "samesitenone");
+  return withBypass.toString();
 }
 
 /**
@@ -125,14 +177,10 @@ async function devBrowserCookie(url: string): Promise<string | null> {
       headers: {
         accept: "text/html",
         "sec-fetch-dest": "document",
-        ...(sameOrigin && extraHeaders(null)),
       },
     });
 
-    const cookie = response.headers
-      .getSetCookie()
-      .map((header) => header.split(";")[0]!)
-      .find((pair) => pair.startsWith("__clerk_db_jwt="));
+    const cookie = findCookie(response, "__clerk_db_jwt");
     if (sameOrigin && cookie) return cookie;
 
     const location = response.headers.get("location");
@@ -149,7 +197,6 @@ async function runLighthouse(
   cookie: string | null,
   outputPath: string,
 ): Promise<Metrics> {
-  const headers = extraHeaders(cookie);
   const args = [
     "--yes",
     LIGHTHOUSE,
@@ -161,9 +208,7 @@ async function runLighthouse(
     "--chrome-flags=--headless=new --no-sandbox",
     "--quiet",
     ...(profile === "desktop" ? ["--preset=desktop"] : []),
-    ...(Object.keys(headers).length > 0
-      ? [`--extra-headers=${JSON.stringify(headers)}`]
-      : []),
+    ...(cookie ? [`--extra-headers=${JSON.stringify({ cookie })}`] : []),
   ];
 
   await execFileAsync("npx", args, { maxBuffer: 64 * 1024 * 1024 });
@@ -173,11 +218,17 @@ async function runLighthouse(
 
   if (report.runtimeError) {
     throw new Error(
-      `Lighthouse falhou: ${report.runtimeError.code} ${report.runtimeError.message}`,
+      `Lighthouse falhou: ${report.runtimeError.code} ${redact(report.runtimeError.message)}`,
     );
   }
   for (const warning of report.runWarnings ?? []) {
-    console.warn(`  aviso do Lighthouse: ${warning}`);
+    console.warn(`  aviso do Lighthouse: ${redact(warning)}`);
+  }
+  // Sem o bypass, um preview protegido mede a tela de login da Vercel.
+  if (new URL(report.finalDisplayedUrl).origin !== new URL(url).origin) {
+    throw new Error(
+      `O Lighthouse terminou em outra página (${redact(report.finalDisplayedUrl)})`,
+    );
   }
 
   return {
@@ -200,13 +251,19 @@ async function main() {
   const url = new URL(process.env.PERF_PATH || "/", baseUrl).toString();
   const runs = readRuns();
   const profiles = readList("PROFILES", PROFILES);
-  const visits = readList("VISITS", VISITS);
+  const protectedPreview = await isProtectedPreview(url);
+  const visits = readList("VISITS", VISITS).filter(
+    (visit) => !protectedPreview || visit === "first",
+  );
   const reportDir = await mkdtemp(path.join(tmpdir(), "hunt-lighthouse-"));
 
   console.info(`Lighthouse (${LIGHTHOUSE}) em ${url}`);
   console.info(`Relatórios JSON em ${reportDir}`);
 
-  const cookie = visits.includes("returning")
+  if (protectedPreview) {
+    console.info("Preview protegido: só a 1ª visita (veja withBypassQuery)");
+  }
+  const devBrowser = visits.includes("returning")
     ? await devBrowserCookie(url)
     : null;
 
@@ -218,9 +275,9 @@ async function main() {
       for (let run = 1; run <= runs; run++) {
         const output = path.join(reportDir, `${profile}-${visit}-${run}.json`);
         const result = await runLighthouse(
-          url,
+          protectedPreview ? withBypassQuery(url) : url,
           profile,
-          visit === "returning" ? cookie : null,
+          visit === "returning" ? devBrowser : null,
           output,
         );
         results.push(result);
