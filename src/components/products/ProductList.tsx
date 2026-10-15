@@ -8,8 +8,9 @@ import { DeferredProductItems } from "./DeferredProductItems";
 import { ProductItems } from "./ProductItems";
 
 /**
- * Cards que saem no primeiro pedaço do HTML; o resto vem logo depois, na mesma
- * resposta (não é paginação: a lista inteira chega sem clique nem rolagem).
+ * Cards que saem no primeiro pedaço do HTML. O resto vem logo depois, na mesma
+ * resposta (não é paginação: a lista inteira chega sem clique nem rolagem), e
+ * o primeiro card, que é o LCP da home, não espera pelos outros.
  */
 const FIRST_CHUNK_SIZE = 10;
 
