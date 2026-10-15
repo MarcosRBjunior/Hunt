@@ -2,7 +2,40 @@
 
 Vitrine pública de produtos de startups, ordenada por upvotes. Visitantes navegam e filtram por trending topics, usuários logados votam e um admin cadastra os produtos. Projeto 06 do portfólio, inspirado no Product Hunt.
 
-> No ar em https://hunt-flame-nine.vercel.app, com os 3 níveis entregues ([Etapas](#etapas)). A medição de desempenho com 1.000 produtos está em [Desempenho](#desempenho); falta o README final com prints.
+**No ar: https://hunt-flame-nine.vercel.app**
+
+![Home no desktop: barra de trending topics, a lista "O Próximo Grande App" ordenada por votos e a lateral com os produtos revisados e o "Em breve"](docs/screenshots/home.png)
+
+## Telas
+
+<table>
+  <tr>
+    <td width="32%" valign="top">
+      <img src="docs/screenshots/home-celular.png" width="260" alt="Home no celular, com 360 px: a lateral desce para baixo da lista">
+      <p align="center">Home no celular (360 px)</p>
+    </td>
+    <td valign="top">
+      <img src="docs/screenshots/filtro-topic.png" alt="Home filtrada pelo topic SaaS: o chip ativo fica roxo e só a coluna principal muda">
+      <p align="center">Filtro por topic (<code>/?topic=saas</code>)</p>
+      <img src="docs/screenshots/categorias.png" alt="Página Categorias com os 5 topics e a contagem de produtos lançados de cada um">
+      <p align="center">Categorias, com a contagem de cada topic</p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <img src="docs/screenshots/admin-produtos.png" alt="Área admin: tabela com nome, status, votos, visitas, topics, nota e data de cada produto">
+      <p align="center">Área admin: tabela de produtos</p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <img src="docs/screenshots/admin-editar.png" alt="Edição de produto no admin: formulário com contador de caracteres, prévia do logo, status, topics e a revisão com nota de 1 a 5">
+      <p align="center">Área admin: edição de produto e revisão</p>
+    </td>
+  </tr>
+</table>
+
+Os prints são da demo (`SEED_DEMO=true`), com os 4 produtos do wireframe e o "Em breve".
 
 ## Stack
 
@@ -50,7 +83,15 @@ A aplicação sobe em http://localhost:3000. Se faltar alguma variável de ambie
 
 ## Variáveis de ambiente
 
-Todas ficam em `.env.example` e são validadas com Zod em `src/server/env.ts`. O schema cresce por fase: hoje exige `PRODUCT_SOURCE` (`mock` ou `prisma`) e `LOG_LEVEL`, e `DATABASE_URL` passa a ser obrigatória com `PRODUCT_SOURCE=prisma`. `DIRECT_URL` só é usada com pooler (o CLI do Prisma conecta direto). As do Clerk (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, as rotas `/sign-in` e `/sign-up` e `CLERK_WEBHOOK_SIGNING_SECRET`, o segredo do endpoint do webhook) são obrigatórias; o CI usa valores fictícios em formato válido, porque nem o build nem os testes falam com o Clerk (os testes do webhook assinam os eventos com o segredo fictício). Localmente o Clerk não alcança o `localhost`, então o `.env.local` também pode ficar com um segredo fictício.
+Ficam em `.env.example`. As do app são validadas com Zod em `src/server/env.ts` ao subir o servidor e no build:
+
+- `PRODUCT_SOURCE` (`mock` ou `prisma`) e `LOG_LEVEL`;
+- `DATABASE_URL`, obrigatória com `PRODUCT_SOURCE=prisma`, e `DIRECT_URL`, só com pooler (o CLI do Prisma conecta direto);
+- as do Clerk: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, as rotas `NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in` e `NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up` e `CLERK_WEBHOOK_SIGNING_SECRET`, o segredo do endpoint do webhook.
+
+O CI usa chaves do Clerk fictícias em formato válido, porque nem o build nem os testes falam com o Clerk (os testes do webhook assinam os eventos com o segredo fictício). Localmente o Clerk não alcança o `localhost`, então o `.env.local` também pode ficar com um segredo de webhook fictício. Nenhuma variável sensível tem o prefixo `NEXT_PUBLIC_`.
+
+Fora do app, todas opcionais: `SEED_DEMO` e `SEED_BULK` (lidas só pelo seed), `TEST_DATABASE_URL` e `E2E_DATABASE_URL` (bancos dos testes de integração e E2E; o padrão é o Postgres do Docker) e `VERCEL_AUTOMATION_BYPASS_SECRET` (para os scripts de medição alcançarem um preview protegido da Vercel).
 
 O Prisma 7 não lê `.env*` sozinho: o `prisma.config.ts` e o seed carregam os mesmos arquivos que o Next via `@next/env`.
 
@@ -138,7 +179,16 @@ A fonte dos dados depende de `PRODUCT_SOURCE` (veja [Banco de dados](#banco-de-d
 
 ## Desempenho
 
-Com 1.000 produtos, a home tem LCP de 1,28 s no Lighthouse desktop (preview na Vercel, 1ª visita) e `GET /api/v1/products` tem p95 de 95–105 ms no servidor: as duas metas da Fase 11 foram cumpridas. No mobile simulado (4G lento), a home fica acima de 2 s mesmo com 5 produtos, por causa dos scripts do Clerk e do Next. Ambiente, método, todos os números e como reproduzir estão em [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md).
+As metas eram a home com LCP abaixo de 2 s e `GET /api/v1/products` com p95 abaixo de 300 ms, com 1.000 produtos no banco. As duas foram cumpridas no preview da Vercel, que tem a mesma configuração da produção:
+
+| Meta                                       | Resultado |
+| ------------------------------------------ | --------- |
+| LCP da home, Lighthouse desktop, 1ª visita | 1,28 s    |
+| `GET /api/v1/products`, p95 no servidor    | 95–105 ms |
+
+Duas mudanças saíram da medição. A lista manda os 10 primeiros cards antes do resto, na mesma resposta, e o LCP no preview caiu de 2,94 s para 1,28 s. E o espaço da barra de rolagem fica reservado desde o início, o que levou o CLS de 0,318 para 0,034. No mobile simulado (4G lento), a home fica acima de 2 s mesmo com 5 produtos, por causa dos scripts do Clerk e do Next (veja [Desvios e riscos aceitos](#desvios-e-riscos-aceitos)).
+
+Ambiente, método, todos os números e como reproduzir (`SEED_BULK=true`, `npm run perf:api` e `npm run perf:lcp`) estão em [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md).
 
 ## Design
 
@@ -178,10 +228,18 @@ A especificação pede a instância de produção do Clerk, mas ela exige um dom
 
 Para passar para a instância de produção: registrar um domínio, criar a instância de produção no Clerk, configurar o DNS e trocar as chaves, o OAuth do GitHub e o endpoint do webhook.
 
+## Desvios e riscos aceitos
+
+- **Clerk de desenvolvimento em produção** (detalhes [acima](#clerk-instância-de-desenvolvimento-em-produção)). A especificação pede a instância de produção, que exige domínio próprio. Além do limite de 100 usuários, toda 1ª visita passa por 3 redirecionamentos até o Clerk para criar a sessão de desenvolvimento, o que custa cerca de 1 s.
+- **Meta de LCP medida no desktop.** No Lighthouse mobile, que simula 4G lento e CPU 4 vezes mais lenta, a home fica em 5,4 s com 1.000 produtos (preview) e em 4,1 s com 5 (local), na 1ª visita. O piso vem dos scripts do Clerk e do Next e dos redirecionamentos do Clerk; o que o baixaria (domínio próprio, carregar o Clerk só quando necessário ou paginar a lista) ficou fora do escopo ([detalhes](docs/PERFORMANCE.md#por-que-o-mobile-não-fica-abaixo-de-2-s)).
+- **Lista inteira numa página** (regra 1 do [`CLAUDE.md`](CLAUDE.md)). Sem paginação nem scroll infinito, a home com 1.000 produtos tem 5,9 MB de HTML (180 KB comprimidos) e 24 mil elementos. O primeiro trecho do streaming leva só os 10 primeiros cards, para eles não esperarem pelo resto.
+- **Sem rate limit** (riscos aceitos no MVP). Uma pessoa com várias contas vota várias vezes no mesmo produto. As visitas contam todo clique, sem deduplicar (regra 6), então podem ser infladas; elas só são exibidas e nunca entram na ordenação.
+
 ## Estrutura
 
 ```
-prisma/           schema.prisma · migrations/ · seed.ts
+prisma/           schema.prisma · migrations/ · seed.ts · demoData.ts · bulkData.ts
+scripts/          reconcile-upvotes.ts · remove-bulk-products.ts · measure-api.ts · measure-lcp.ts
 src/app/          páginas, layouts e rotas de API
 src/components/   layout/ · products/ · sidebar/ · topics/ · admin/ · ui/
 src/server/       env, logger, errors, repositories/, services/
@@ -189,7 +247,7 @@ src/lib/          validation/ (Zod) e utilitários
 src/mocks/        dados do nível 1
 src/types/        DTOs da API
 tests/            unit/ · integration/ · api/ · e2e/
-docs/design/      design system extraído do Figma Make (referência)
+docs/             PERFORMANCE.md · screenshots/ · design/ (design system extraído do Figma Make)
 ```
 
 As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](CLAUDE.md).
@@ -201,6 +259,7 @@ As regras de produto, a arquitetura e os casos de teste estão em [`CLAUDE.md`](
 | 1       | Layout + listagem vinda de API mock                      | Concluído (`v1.0.0`) |
 | 2 (MVP) | Banco real, login, votos, visitas, admin, coluna lateral | Concluído (`v2.0.0`) |
 | 3       | Filtro por trending topics                               | Concluído (`v3.0.0`) |
+| —       | Fechamento: 1.000 produtos, medição e README final       | Concluído            |
 
 ## Fluxo de trabalho
 
