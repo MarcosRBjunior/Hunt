@@ -8,14 +8,37 @@ export type DemoVote = {
   productId: string;
 };
 
-/** `SEED_DEMO`: "true" liga a demo; vazio, ausente ou "false" desliga. */
-export function isDemoEnabled(value: string | undefined): boolean {
+/** Liga/desliga do seed: "true" liga; vazio, ausente ou "false" desliga. */
+function parseSeedFlag(name: string, value: string | undefined): boolean {
   if (value === undefined || value === "" || value === "false") return false;
   if (value === "true") return true;
 
-  throw new Error(
-    `SEED_DEMO deve ser "true" ou "false" (recebido: "${value}")`,
-  );
+  throw new Error(`${name} deve ser "true" ou "false" (recebido: "${value}")`);
+}
+
+/** `SEED_DEMO`: "true" liga a demo; vazio, ausente ou "false" desliga. */
+export function isDemoEnabled(value: string | undefined): boolean {
+  return parseSeedFlag("SEED_DEMO", value);
+}
+
+export type SeedOptions = {
+  /** Produtos de `src/mocks/products.json`, com usuários e votos fictícios. */
+  demo: boolean;
+  /** Mais 995 produtos gerados (prisma/bulkData.ts), para medir desempenho. */
+  bulk: boolean;
+};
+
+/** `SEED_BULK=true` completa a demo até 1.000 produtos: sem a demo, é erro. */
+export function parseSeedOptions(
+  env: Record<string, string | undefined>,
+): SeedOptions {
+  const demo = isDemoEnabled(env.SEED_DEMO);
+  const bulk = parseSeedFlag("SEED_BULK", env.SEED_BULK);
+
+  if (bulk && !demo) {
+    throw new Error("SEED_BULK=true exige SEED_DEMO=true (completa a demo)");
+  }
+  return { demo, bulk };
 }
 
 /** Ids externos determinísticos (`seed_demo_user_0001`, ...), para o seed ser idempotente. */

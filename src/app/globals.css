@@ -105,6 +105,12 @@
 @layer base {
   html {
     font-synthesis: none;
+    /*
+     * Reserva o espaço da barra de rolagem desde a 1ª pintura: sem isso, a
+     * barra aparece quando a lista chega (streaming) e desloca a página para o
+     * lado (CLS de 0,318 com 1.000 produtos; docs/PERFORMANCE.md).
+     */
+    scrollbar-gutter: stable;
   }
 
   body {

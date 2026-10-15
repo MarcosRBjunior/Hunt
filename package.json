@@ -25,7 +25,10 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:reconcile": "tsx scripts/reconcile-upvotes.ts",
-    "db:studio": "prisma studio"
+    "db:bulk:remove": "tsx scripts/remove-bulk-products.ts",
+    "db:studio": "prisma studio",
+    "perf:api": "tsx scripts/measure-api.ts",
+    "perf:lcp": "tsx scripts/measure-lcp.ts"
   },
   "dependencies": {
     "@clerk/localizations": "4.22.1",

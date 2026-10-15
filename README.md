@@ -2,7 +2,7 @@
 
 Vitrine pública de produtos de startups, ordenada por upvotes. Visitantes navegam e filtram por trending topics, usuários logados votam e um admin cadastra os produtos. Projeto 06 do portfólio, inspirado no Product Hunt.
 
-> No ar em https://hunt-flame-nine.vercel.app, com os 3 níveis entregues ([Etapas](#etapas)). Falta o fechamento: medição de desempenho com 1.000 produtos e README final com prints.
+> No ar em https://hunt-flame-nine.vercel.app, com os 3 níveis entregues ([Etapas](#etapas)). A medição de desempenho com 1.000 produtos está em [Desempenho](#desempenho); falta o README final com prints.
 
 ## Stack
 
@@ -44,7 +44,9 @@ A aplicação sobe em http://localhost:3000. Se faltar alguma variável de ambie
 | `npm run db:deploy`               | Aplica as migrations pendentes (sem criar novas)              |
 | `npm run db:seed`                 | Seed idempotente (topics e, com `SEED_DEMO=true`, a demo)     |
 | `npm run db:reconcile`            | Acerta `upvotes = count(votes)` nos produtos que divergiram   |
+| `npm run db:bulk:remove`          | Apaga os 995 produtos gerados pelo `SEED_BULK=true`           |
 | `npm run db:studio`               | Prisma Studio                                                 |
+| `npm run perf:api` / `perf:lcp`   | Mede a API e o LCP da home (veja [Desempenho](#desempenho))   |
 
 ## Variáveis de ambiente
 
@@ -64,7 +66,8 @@ Schema em `prisma/schema.prisma`, com 6 tabelas: `users`, `products`, `votes`, `
 O seed (`prisma/seed.ts`) roda quantas vezes for preciso sem duplicar nada:
 
 - **sempre** cria os 5 topics fixos (`ia`, `produtividade`, `marketing`, `saas`, `tech`);
-- **com `SEED_DEMO=true`** cria os produtos de `src/mocks/products.json` (mesmos ids), com topics, revisões, 298 usuários fictícios (`seed_demo_user_0001`, ...) e 631 votos, mantendo `upvotes = count(votes)`.
+- **com `SEED_DEMO=true`** cria os produtos de `src/mocks/products.json` (mesmos ids), com topics, revisões, 298 usuários fictícios (`seed_demo_user_0001`, ...) e 631 votos, mantendo `upvotes = count(votes)`;
+- **com `SEED_BULK=true`** (só junto com `SEED_DEMO=true`) completa a demo até 1.000 produtos, com 995 gerados por `prisma/bulkData.ts` (sempre os mesmos) e votos dos mesmos usuários fictícios. Serve para medir o desempenho; `npm run db:bulk:remove` apaga só os gerados.
 
 Em produção (Railway) a variável fica vazia e o banco começa só com os topics. As migrations de produção rodam no workflow `.github/workflows/migrate.yml` a cada push na `main` (e à mão, na aba Actions), nunca no build da Vercel, que também roda nos previews. A URL do banco fica no segredo `PRODUCTION_DATABASE_URL` do environment `Production` do GitHub. A conexão com o Railway às vezes trava, então são até 3 tentativas com limite de tempo.
 
@@ -132,6 +135,10 @@ Sucesso: `{ "data": ... }`. Erro: `{ "error": { "code", "message", "details" } }
 - **Reconciliação**: se `upvotes` divergir de `count(votes)`, `npm run db:reconcile` corrige (só mexe nos que divergiram e trava novos votos enquanto conta).
 
 A fonte dos dados depende de `PRODUCT_SOURCE` (veja [Banco de dados](#banco-de-dados)). Com `mock`, a API é só leitura: votos, visitas e admin precisam de `PRODUCT_SOURCE=prisma`.
+
+## Desempenho
+
+Com 1.000 produtos, a home tem LCP de 1,28 s no Lighthouse desktop (preview na Vercel, 1ª visita) e `GET /api/v1/products` tem p95 de 95–105 ms no servidor: as duas metas da Fase 11 foram cumpridas. No mobile simulado (4G lento), a home fica acima de 2 s mesmo com 5 produtos, por causa dos scripts do Clerk e do Next. Ambiente, método, todos os números e como reproduzir estão em [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md).
 
 ## Design
 

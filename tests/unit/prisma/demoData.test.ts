@@ -8,6 +8,7 @@ import {
   demoUserCount,
   demoUserExternalIds,
   isDemoEnabled,
+  parseSeedOptions,
 } from "../../../prisma/demoData";
 import { buildProduct } from "../../helpers/buildProduct";
 
@@ -71,5 +72,30 @@ describe("buildDemoVotes", () => {
 
     expect(demoUserCount(products)).toBe(298);
     expect(buildDemoVotes(products)).toHaveLength(631);
+  });
+});
+
+describe("parseSeedOptions", () => {
+  it("sem variáveis, só os topics", () => {
+    expect(parseSeedOptions({})).toEqual({ demo: false, bulk: false });
+  });
+
+  it("SEED_BULK=true completa a demo", () => {
+    expect(parseSeedOptions({ SEED_DEMO: "true", SEED_BULK: "true" })).toEqual({
+      demo: true,
+      bulk: true,
+    });
+  });
+
+  it("SEED_BULK=true sem a demo é erro", () => {
+    expect(() => parseSeedOptions({ SEED_BULK: "true" })).toThrow(
+      "SEED_DEMO=true",
+    );
+  });
+
+  it("falha com valor desconhecido em SEED_BULK", () => {
+    expect(() =>
+      parseSeedOptions({ SEED_DEMO: "true", SEED_BULK: "1000" }),
+    ).toThrow("SEED_BULK");
   });
 });
